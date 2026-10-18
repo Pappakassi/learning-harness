@@ -86,7 +86,8 @@ def main():
         out_files = parts
     else:
         suffix = "draft" if args.draft else res
-        out = build / f"{video.parent.name}_{suffix}.mp4"
+        name = video.parent.name if video.stem == "video" else f"{video.parent.name}_{video.stem}"
+        out = build / f"{name}_{suffix}.mp4"
         stitch(parts, out)
         out_files = [out]
 
