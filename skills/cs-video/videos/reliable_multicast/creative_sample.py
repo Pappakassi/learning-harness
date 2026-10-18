@@ -22,17 +22,18 @@ class AckFlood(CSScene):
 
         # 1. small group: harmless
         with self.say("Every receiver ACKs every packet. With six receivers, the sender barely notices."):
-            acks, anim = tree.gather(HOSTS, "S", "ACK", T.GREEN, run_time=2.0)
+            acks, anim = tree.gather(HOSTS, "S", "ACK", run_time=2.0)
             self.play(anim, gauge.to(0.06, run_time=2.0))
             self.play(FadeOut(acks), run_time=0.3)
 
         # 2. zoom out to a huge group
         sender = tree["S"]
-        host_dots = VGroup(*[Dot(tree[h].get_center(), radius=0.09, color=T.MUTED) for h in HOSTS])
+        host_dots = VGroup(*[Dot(tree[h].get_center(), radius=0.09, color=tree[h].color) for h in HOSTS])
         ring6 = [CENTER + 1.0 * np.array([np.cos(a), np.sin(a) * 0.7, 0])
                  for a in np.linspace(0, TAU, 7)[:-1]]
         field_pts = scatter_ring(CENTER, rx=3.8, ry=2.25, n=650, inner=0.18, seed=4)
-        field = VGroup(*[Dot(p, radius=0.035, color=T.MUTED) for p in field_pts])
+        field_colors = [T.PALETTE[i % len(T.PALETTE)] for i in range(len(field_pts))]
+        field = VGroup(*[Dot(p, radius=0.04, color=c) for p, c in zip(field_pts, field_colors)])
         field.skip_layout_check = True
         count = CountUp("receivers", 6, size=T.BODY_SIZE - 4)
         count.move_to([3.6, -0.7, 0], aligned_edge=LEFT)
@@ -48,10 +49,10 @@ class AckFlood(CSScene):
                       count.to(10_000, run_time=2.4, log=True),
                       run_time=2.4, rate_func=smooth)
             self.remove(host_dots)
-        self.bring_to_front(sender)
+        sender.set_z_index(10)
 
         # 3. the flood
-        swarm = Swarm(field_pts, CENTER, color=T.GREEN, n=420, speed=0.5, streak=0.28, width=3).start()
+        swarm = Swarm(field_pts, CENTER, colors=field_colors, n=420, speed=0.5, streak=0.28, width=3).start()
         halo = glow(sender, T.RED, layers=8, spread=0.9)
         self.add(swarm)
         self.bring_to_front(sender)

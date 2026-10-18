@@ -17,8 +17,8 @@ import textwrap
 from contextlib import contextmanager
 from pathlib import Path
 
-from manim import (DOWN, UP, FadeIn, FadeOut, ReplacementTransform, RoundedRectangle,
-                   Text, VGroup, config, logger)
+from manim import (DOWN, UP, Circle, FadeIn, FadeOut, Rectangle, ReplacementTransform,
+                   RoundedRectangle, Text, VGroup, config, logger)
 from manim_voiceover import VoiceoverScene
 from manim_voiceover.services.base import SpeechService, initialize_speech_service
 
@@ -74,10 +74,31 @@ class CSScene(VoiceoverScene):
         self._title = None
         self._caption = None
         self._warned = set()
+        self._backdrop = None
+        if T.COLORFUL:
+            self._backdrop = self._make_backdrop()
+            self.add(self._backdrop)
+
+    def _make_backdrop(self) -> VGroup:
+        bg = Rectangle(width=config.frame_width + 0.2, height=config.frame_height + 0.2,
+                       stroke_width=0, fill_opacity=1)
+        bg.set_fill(color=[T.BG_BOTTOM, T.BG_TOP])
+        bg.set_sheen_direction(UP)
+        blobs = VGroup()
+        for (x, y), color, r in T.BLOBS:
+            for k in range(16):
+                blobs.add(Circle(radius=r * (1 - k * 0.055), stroke_width=0, fill_color=color,
+                                 fill_opacity=0.014).move_to([x, y, 0]))
+        g = VGroup(bg, blobs)
+        g.skip_layout_check = True
+        g.set_z_index(-100)
+        return g
 
     # ---------- titles ----------
     def show_title(self, text: str, run_time: float = 0.8):
         new = make_text(text, size=T.HEADING_SIZE, weight="BOLD").move_to(UP * T.TITLE_Y)
+        if T.COLORFUL:
+            new.set_color_by_gradient(*T.TITLE_GRADIENT)
         if new.width > T.FRAME_W - 2 * T.SAFE_MARGIN:
             new.scale_to_fit_width(T.FRAME_W - 2 * T.SAFE_MARGIN)
         if self._title is None:
@@ -88,7 +109,8 @@ class CSScene(VoiceoverScene):
         return new
 
     def clear_content(self, run_time: float = 0.6, keep_title: bool = True):
-        keep = {self._title, self._caption} if keep_title else {self._caption}
+        keep = {self._title, self._caption, self._backdrop} if keep_title \
+            else {self._caption, self._backdrop}
         others = [m for m in self.mobjects if m not in keep]
         if others:
             self.play(*[FadeOut(m) for m in others], run_time=run_time)
@@ -145,7 +167,7 @@ class CSScene(VoiceoverScene):
         half_w = config.frame_width / 2 - 0.05
         half_h = config.frame_height / 2 - 0.05
         for m in self.mobjects:
-            if m is self._caption or getattr(m, "skip_layout_check", False):
+            if m is self._caption or m is self._backdrop or getattr(m, "skip_layout_check", False):
                 continue
             if m.width == 0 and m.height == 0:
                 continue

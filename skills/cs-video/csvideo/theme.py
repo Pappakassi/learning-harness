@@ -38,3 +38,17 @@ CONTENT_TOP = 2.75          # content stays below this line when a title is show
 CONTENT_BOTTOM = -2.5       # content stays above this line (room for a 2-line caption)
 CONTENT_H = CONTENT_TOP - CONTENT_BOTTOM
 CONTENT_MID_Y = (CONTENT_TOP + CONTENT_BOTTOM) / 2
+
+# Colourful extras
+CYAN = ManimColor("#22D3EE")
+PINK = ManimColor("#F472B6")
+LIME = ManimColor("#A3E635")
+CORAL = ManimColor("#FB7185")
+# rotating palette for "one colour per thing" (receivers, hosts, series)
+PALETTE = [CYAN, PINK, LIME, ORANGE, PURPLE, YELLOW, BLUE, CORAL]
+TITLE_GRADIENT = [CYAN, BLUE, PURPLE, PINK]
+# backdrop: vertical gradient + soft coloured glows
+BG_TOP = ManimColor("#121A3A")
+BG_BOTTOM = ManimColor("#1B0F2E")
+BLOBS = [((-5.5, 2.5), CYAN, 3.2), ((5.8, -2.2), PINK, 3.4), ((1.5, 3.4), PURPLE, 2.6)]
+COLORFUL = True     # set False for the plain dark style

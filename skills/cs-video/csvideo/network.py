@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import numpy as np
 from manim import (DOWN, UP, AnimationGroup, Circle, Line, RoundedRectangle, Text,
-                   UpdateFromAlphaFunc, VGroup, linear, smooth)
+                   UpdateFromAlphaFunc, VGroup, interpolate_color, linear, smooth)
 
 from . import theme as T
 
@@ -30,14 +30,16 @@ class NetNode(VGroup):
     STYLE = {"host": T.MUTED, "router": T.PURPLE, "sender": T.BLUE}
 
     def __init__(self, name: str, kind: str = "host", note: str | None = None,
-                 scale: float = 1.0, **kwargs):
+                 scale: float = 1.0, color=None, **kwargs):
         super().__init__(**kwargs)
         self.layout_name = f"NetNode {name}"
         self.name, self.kind = name, kind
-        color = self.STYLE.get(kind, T.MUTED)
+        color = color or self.STYLE.get(kind, T.MUTED)
+        self.color = color
         if kind == "router":
             self.shape = Circle(radius=0.34 * scale, stroke_color=color, stroke_width=3,
-                                fill_color=T.FAINT, fill_opacity=1)
+                                fill_color=interpolate_color(T.BG, color, 0.3) if T.COLORFUL else T.FAINT,
+                                fill_opacity=1)
         else:
             w = (1.0 if kind == "sender" else 0.72) * scale
             probe = _txt(name, int(22 * scale), weight="BOLD")
@@ -45,7 +47,8 @@ class NetNode(VGroup):
             self.shape = RoundedRectangle(corner_radius=0.1, width=w, height=0.56 * scale,
                                           stroke_color=color,
                                           stroke_width=4 if kind == "sender" else 2.5,
-                                          fill_color=T.FAINT, fill_opacity=1)
+                                          fill_color=interpolate_color(T.BG, color, 0.3) if T.COLORFUL else T.FAINT,
+                                          fill_opacity=1)
         self.label = _txt(name, int(22 * scale), color=T.FG, weight="BOLD")
         if self.label.width > self.shape.width * 0.85:
             self.label.scale_to_fit_width(self.shape.width * 0.85)
@@ -68,7 +71,7 @@ class NetNode(VGroup):
         return self.shape.animate.set_stroke(color=color, width=width)
 
     def reset(self):
-        color = self.STYLE.get(self.kind, T.MUTED)
+        color = self.color
         return self.shape.animate.set_stroke(color=color,
                                              width=4 if self.kind == "sender" else 2.5)
 
@@ -148,8 +151,14 @@ class NetTree(VGroup):
                 order.append(c)
 
         self.nodes: dict[str, NetNode] = {}
+        host_i = 0
         for n in order:
-            self.nodes[n] = NetNode(n, kinds.get(n, "host"), (notes or {}).get(n), scale=scale)
+            kind = kinds.get(n, "host")
+            color = None
+            if kind == "host" and T.COLORFUL:
+                color = T.PALETTE[host_i % len(T.PALETTE)]
+                host_i += 1
+            self.nodes[n] = NetNode(n, kind, (notes or {}).get(n), scale=scale, color=color)
         gap = width / max(len(leaves), 1)
         x_of = {leaf: (i - (len(leaves) - 1) / 2) * gap for i, leaf in enumerate(leaves)}
 
@@ -206,7 +215,7 @@ class NetTree(VGroup):
             pkts.add(p)
         return pkts, AnimationGroup(*anims)
 
-    def gather(self, srcs, dst: str, label: str = "ACK", color=T.GREEN,
+    def gather(self, srcs, dst: str, label: str = "ACK", color=None,
                run_time: float = 2.0, rate_func=linear, spread: float = 0.16):
         """Packets from many nodes converging on one (e.g. ACKs flowing back).
 
@@ -220,7 +229,8 @@ class NetTree(VGroup):
             off = np.array([(k - (n - 1) / 2) * spread * 0.9, (k % 3 - 1) * spread, 0.0])
             pts = self.path(s, dst)
             pts = [pts[0]] + [p + off for p in pts[1:]]
-            p = Packet(label, color)
+            c = self.nodes[s].color if (T.COLORFUL and color is None) else (color or T.GREEN)
+            p = Packet(label, c)
             anims.append(p.travel(pts, run_time=run_time, rate_func=rate_func))
             pkts.add(p)
         return pkts, AnimationGroup(*anims)

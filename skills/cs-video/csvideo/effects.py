@@ -43,7 +43,9 @@ class Swarm(VGroup):
     """
 
     def __init__(self, sources, target, color=T.GREEN, n: int = 300, speed: float = 0.55,
-                 streak: float = 0.18, width: float = 2.5, seed: int = 2, **kwargs):
+                 streak: float = 0.18, width: float = 2.5, seed: int = 2, colors=None,
+                 **kwargs):
+        """colors: optional list, one colour per source (particles take their source's)."""
         super().__init__(**kwargs)
         self.skip_layout_check = True
         rng = np.random.default_rng(seed)
@@ -55,8 +57,9 @@ class Swarm(VGroup):
         self.streak = streak
         self.t = 0.0
         self.intensity = 0.0        # 0 = invisible, 1 = full stream (animate via set_intensity)
-        for _ in range(n):
-            self.add(Line(UP * 0.0, UP * 0.01, stroke_color=color, stroke_width=width))
+        for k in range(n):
+            c = colors[idx[k]] if colors is not None else color
+            self.add(Line(UP * 0.0, UP * 0.01, stroke_color=c, stroke_width=width))
         self._apply()
 
     def _apply(self):
