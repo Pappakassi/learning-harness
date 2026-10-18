@@ -11,13 +11,23 @@ offline with Kokoro TTS, and checked frame by frame before it is delivered.
 
 Everything below is relative to this skill folder (`skills/cs-video/`).
 
-## 0. Setup (once per machine)
+## 0. Get the code and set up (once per session/machine)
 
+The code lives in the GitHub repo **Pappakassi/learning-harness**, folder `skills/cs-video/`.
+If `skills/cs-video/csvideo/` isn't already on disk:
+
+1. Attach the repo (in Claude's cloud workspace: the add-repo tool with owner
+   `Pappakassi`, repo `learning-harness`, push access), then
+   `git clone --depth 1 https://github.com/Pappakassi/learning-harness ~/learning-harness`.
+2. `cd ~/learning-harness/skills/cs-video`
+
+Then:
 ```bash
-bash setup.sh          # venv, Python packages, narration voice
+bash setup.sh          # venv, Python packages, narration voices
 ```
-Use `.venv/bin/python` for every script. If setup reports missing system tools,
-install them with the printed command first.
+If setup reports missing system tools, install them with the printed command
+(in a Linux workspace: `apt-get install -y ffmpeg texlive texlive-latex-extra dvisvgm sox libpango1.0-dev pkg-config`)
+and run it again. Use `.venv/bin/python` for every script.
 
 ## 1. Storyboard first
 
@@ -72,6 +82,26 @@ class Intro(CSScene):
 
 Example using the network templates: `videos/reliable_multicast/video.py`.
 
+**Effects** (`csvideo/effects.py`): use these to make scenes feel alive, not like slides.
+
+| Effect | Use |
+|---|---|
+| `Swarm(sources, target, colors=..., n=)` | many particles streaming to one point (traffic, floods); `.start()`, `.set_intensity(v)`, `.stop()` |
+| `Gauge(label)` | dial that reacts to load; `gauge.to(0.9)`, values > 1 overload into red |
+| `CountUp(label, value)` | smoothly counting number; `.to(10_000, log=True)` for big jumps |
+| `glow(mob, color)` | soft halo behind a mobject (`FadeIn` it; don't set_opacity) |
+| `shake(mob)` | jitter for overload / error moments |
+| `scatter_ring(center, rx, ry, n)` | points for a crowd of hosts around a center |
+
+Style example (zoom-out to a crowd, swarm, overload): `videos/reliable_multicast/creative_sample.py`.
+Prefer this kind of motion (zooming out to show scale, things streaming, meters
+reacting) over static boxes appearing one by one.
+
+**Colour**: the default style (`theme.COLORFUL = True`) gives a gradient backdrop,
+gradient titles, and a per-item colour from `T.PALETTE` (hosts and their packets
+share a colour). Give crowds and series palette colours; keep meaning colours
+(green = ok, red = problem, yellow = current) for state.
+
 **Scene helpers** (`CSScene`): `show_title(text)`, `say(text)` (context manager, yields
 a tracker with `.duration`), `clear_content()`, `make_text(s, size, color)`.
 
@@ -95,6 +125,7 @@ then use it. Don't hand-draw one-off structures inside a scene.
 - Use `Text` for words (Inter font) and `MathTex` only for real formulas.
 - Colors come from `theme.py` only. Meaning stays consistent: yellow = currently
   looked at, green = success/found, red = discarded, blue/orange = pointers.
+- Objects in front of a `Swarm` or `glow`: give them `set_z_index(10)` so they stay on top.
 - Manim 0.22 API: `Create` (not `ShowCreation`), `self.play(mob.animate.x())`.
 
 ## 3. Draft render (fast, silent, 480p)
@@ -130,7 +161,7 @@ to catch dead air. Short pauses at scene changes are fine.
 ## 6. Deliver
 
 Send the MP4 from `build/` with a one-line summary. Commit `storyboard.md` and
-`video.py` (not `build/`, which is git-ignored).
+`video.py` (not `build/`, which is git-ignored) and push to the repo.
 
 ## Voices
 
