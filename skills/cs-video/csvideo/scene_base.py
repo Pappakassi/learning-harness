@@ -62,8 +62,8 @@ class CSScene(VoiceoverScene):
         if os.environ.get("CSVIDEO_DRAFT") == "1":
             self.set_speech_service(SilentService())
         else:
-            from .voice import PiperService
-            self.set_speech_service(PiperService())
+            from .voice import make_speech_service
+            self.set_speech_service(make_speech_service())
         self._title = None
         self._caption = None
         self._warned = set()

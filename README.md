@@ -7,7 +7,7 @@ material into custom explainer videos, books and other study formats.
 
 | Skill | What it does |
 |---|---|
-| [`skills/cs-video`](skills/cs-video/SKILL.md) | Narrated, captioned CS explainer videos from a topic prompt (Manim + Piper TTS) |
+| [`skills/cs-video`](skills/cs-video/SKILL.md) | Narrated, captioned CS explainer videos from a topic prompt (Manim + Kokoro TTS) |
 
 Planned: epub book generation, Chinese-language video formats.
 

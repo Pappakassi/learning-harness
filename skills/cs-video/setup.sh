@@ -29,8 +29,17 @@ fi
 .venv/bin/pip install -q -r requirements.txt
 
 mkdir -p voices
+KOKORO=https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0
+for f in kokoro-v1.0.onnx voices-v1.0.bin; do
+  if [ ! -f "voices/$f" ]; then
+    echo "Downloading Kokoro $f..."
+    curl -sSL -o "voices/$f" "$KOKORO/$f"
+  fi
+done
+
+# Piper: smaller fallback voice (CSVIDEO_TTS=piper)
 if [ ! -f voices/en-us-lessac-medium.onnx ]; then
-  echo "Downloading narration voice (~60 MB)..."
+  echo "Downloading Piper fallback voice..."
   curl -sSL -o voices/lessac.tar.gz \
     https://github.com/rhasspy/piper/releases/download/v0.0.2/voice-en-us-lessac-medium.tar.gz
   tar xzf voices/lessac.tar.gz -C voices

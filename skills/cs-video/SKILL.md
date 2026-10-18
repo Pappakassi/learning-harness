@@ -7,7 +7,7 @@ description: Make a narrated computer-science explainer video (Manim animation +
 
 Turns a topic into a 1–4 minute narrated, captioned explainer video. The video is
 built from tested templates in `csvideo/` (arrays, pointers, code panels...), voiced
-offline with Piper TTS, and checked frame by frame before it is delivered.
+offline with Kokoro TTS, and checked frame by frame before it is delivered.
 
 Everything below is relative to this skill folder (`skills/cs-video/`).
 
@@ -128,6 +128,10 @@ Send the MP4 from `build/` with a one-line summary. Commit `storyboard.md` and
 
 ## Voices
 
-Default: `voices/en-us-lessac-medium.onnx` (Piper, offline). Any Piper `.onnx`
-voice works; set `CSVIDEO_VOICE=/path/to/voice.onnx`. Changing the voice text or
-model re-generates audio; unchanged lines come from cache.
+Default: **Kokoro** (offline, natural-sounding), voice `af_heart`. Change with env vars:
+- `CSVIDEO_KOKORO_VOICE=am_michael` (also `bf_emma`, `am_fenrir`, ...)
+- `CSVIDEO_SPEED=0.95` (slower) / `1.1` (faster)
+- `CSVIDEO_TTS=piper` switches to the smaller, more robotic Piper fallback.
+
+Changing the text, voice or speed re-generates that line's audio; unchanged lines
+come from cache.

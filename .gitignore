@@ -9,3 +9,4 @@ media/
 **/voices/MODEL_CARD
 layout_report.txt
 .DS_Store
+**/voices/*.bin
