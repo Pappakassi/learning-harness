@@ -79,8 +79,11 @@ class Intro(CSScene):
 | `NetTree({child: parent}, kinds={...}, notes={...})` | networks laid out top-down (sender / router / host) | `send(src, dsts, label)`, `gather(srcs, dst, "ACK")` → `(packets, anim)`; `tree["A"].flash(color)`, `.reset()`, `link(a, b)`, `path(a, b)` |
 | `NetNode(name, kind)` | a single host / router / sender | `flash(color)`, `reset()`, `set_note(text)` |
 | `Packet(label, color)` | a packet in flight | `travel(points)` (one hop per time slice; hidden until it starts) |
+| `NetGraph({name: (x, y)}, {(a, b): cost}, kinds=, colors=, dashed=)` | weighted graphs with cost labels (routing, shortest paths) | `edge(a, b)`, `cost(a, b)`, `highlight_edge(a, b, color)`, `g["A"]` |
+| `GridView(values, row_labels=, col_labels=, row_colors=)` | tables: distance vectors, routing tables, DP tables | `highlight_col(c)`, `highlight_cell(r, c)`, `target_text(r, c, v)` + `put(r, c, mob)`, `set_text(r, c, v)` |
+| `Chip(text, color)` | small pill: a candidate sum, a tag like "+4" | `win()`, `lose()` |
 
-Example using the network templates: `videos/reliable_multicast/video.py`.
+Examples: network templates in `videos/reliable_multicast/video.py`; graph + tables in `videos/distance_vector/video.py`.
 
 **Effects** (`csvideo/effects.py`): use these to make scenes feel alive, not like slides.
 

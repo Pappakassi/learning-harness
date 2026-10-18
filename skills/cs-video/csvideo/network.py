@@ -14,7 +14,7 @@ Sending from many hosts to one node shows ACKs converging (implosion).
 from __future__ import annotations
 
 import numpy as np
-from manim import (DOWN, UP, AnimationGroup, Circle, Line, RoundedRectangle, Text,
+from manim import (DOWN, UP, AnimationGroup, Circle, DashedLine, Line, RoundedRectangle, Text,
                    UpdateFromAlphaFunc, VGroup, interpolate_color, linear, smooth)
 
 from . import theme as T
@@ -234,3 +234,64 @@ class NetTree(VGroup):
             anims.append(p.travel(pts, run_time=run_time, rate_func=rate_func))
             pkts.add(p)
         return pkts, AnimationGroup(*anims)
+
+
+class NetGraph(VGroup):
+    """A weighted graph with nodes at given positions and labelled edge costs.
+
+        g = NetGraph({"B": (0, 0), "A": (-3, 1.5)}, {("B", "A"): 4},
+                     kinds={"B": "sender"}, colors={"A": T.CYAN})
+        g.edge("B", "A"), g.cost("B", "A"), g["A"]
+        self.play(g.highlight_edge("B", "A", T.GREEN))
+    Edges with cost None are drawn without a label; dashed=True edges are drawn dashed
+    (e.g. "claimed" distances rather than real links).
+    """
+
+    def __init__(self, positions: dict, edges: dict, kinds: dict | None = None,
+                 colors: dict | None = None, dashed: set | None = None, scale: float = 1.0,
+                 **kwargs):
+        super().__init__(**kwargs)
+        self.layout_name = "NetGraph"
+        kinds, colors, dashed = kinds or {}, colors or {}, dashed or set()
+        self.nodes: dict[str, NetNode] = {}
+        for n, (x, y) in positions.items():
+            self.nodes[n] = NetNode(n, kinds.get(n, "host"), scale=scale,
+                                    color=colors.get(n)).move_to([x, y, 0])
+        self.edges, self.costs = {}, {}
+        edge_group, cost_group = VGroup(), VGroup()
+        for (a, b), cost in edges.items():
+            pa, pb = self.nodes[a].shape.get_center(), self.nodes[b].shape.get_center()
+            cls = DashedLine if (a, b) in dashed else Line
+            ln = cls(pa, pb, stroke_color=T.MUTED, stroke_width=3)
+            self.edges[(a, b)] = ln
+            edge_group.add(ln)
+            if cost is not None:
+                lab = _txt(str(cost), int(24 * scale), color=T.FG, weight="BOLD")
+                bg = Circle(radius=max(lab.width, lab.height) / 2 + 0.1, stroke_width=0,
+                            fill_color=T.BG, fill_opacity=0.9)
+                tag = VGroup(bg, lab.move_to(bg))
+                tag.move_to((pa + pb) / 2)
+                self.costs[(a, b)] = tag
+                cost_group.add(tag)
+        self.edge_group, self.cost_group = edge_group, cost_group
+        for node in self.nodes.values():
+            node.set_z_index(2)          # nodes always draw over edges
+        cost_group.set_z_index(1)
+        self.add(edge_group, cost_group, *self.nodes.values())
+
+    def __getitem__(self, name):
+        if isinstance(name, str):
+            return self.nodes[name]
+        return super().__getitem__(name)
+
+    def edge(self, a, b):
+        return self.edges.get((a, b)) or self.edges[(b, a)]
+
+    def cost(self, a, b):
+        return self.costs.get((a, b)) or self.costs.get((b, a))
+
+    def highlight_edge(self, a, b, color=T.YELLOW, width: float = 7):
+        return self.edge(a, b).animate.set_stroke(color=color, width=width)
+
+    def reset_edge(self, a, b):
+        return self.edge(a, b).animate.set_stroke(color=T.MUTED, width=3)

@@ -333,3 +333,130 @@ class Callout(VGroup):
                                stroke_width=3, fill_color=T.FAINT, fill_opacity=1)
         label.move_to(box)
         self.add(box, label)
+
+
+# --------------------------------------------------------------------------
+# GridView: tables (distance vectors, routing tables, truth tables, DP tables)
+# --------------------------------------------------------------------------
+class GridView(VGroup):
+    """A table of cells with optional row/column labels.
+
+        g = GridView([[0, 4, 6], [5, 2, 0]], row_labels=["A", "C"], col_labels=["A", "B", "C"])
+        self.play(g.highlight_col(2))
+        self.play(TransformFromCopy(chip_number, g.target_text(1, 0, "7")))
+        g.put(1, 0, that_text)          # after the animation: make it the cell's text
+
+    Use "" for an empty cell. row_colors colours the row labels (and their stripe).
+    """
+
+    def __init__(self, values, row_labels=None, col_labels=None, cell_w: float = 0.72,
+                 cell_h: float = 0.56, size: int = 26, row_colors=None,
+                 label_size: int | None = None, **kwargs):
+        super().__init__(**kwargs)
+        self.layout_name = "GridView"
+        self.n_rows, self.n_cols = len(values), len(values[0])
+        self.cell_w, self.cell_h, self.size = cell_w, cell_h, size
+        label_size = label_size or size - 2
+        self.boxes = [[None] * self.n_cols for _ in range(self.n_rows)]
+        self.texts = [[None] * self.n_cols for _ in range(self.n_rows)]
+        body = VGroup()
+        for r, row in enumerate(values):
+            for c, v in enumerate(row):
+                box = Rectangle(width=cell_w, height=cell_h, stroke_color=T.MUTED,
+                                stroke_width=1.5, fill_color=T.FAINT, fill_opacity=0.9)
+                box.move_to([c * cell_w, -r * cell_h, 0])
+                txt = self._make_text(v, box)
+                self.boxes[r][c], self.texts[r][c] = box, txt
+                body.add(box, txt)
+        self.body = body
+        self.add(body)
+        self.row_labels = VGroup()
+        if row_labels:
+            for r, lab in enumerate(row_labels):
+                color = row_colors[r] if row_colors else T.FG
+                t = _txt(lab, label_size, color=color, weight="BOLD")
+                t.next_to(self.boxes[r][0], LEFT, buff=0.25)
+                self.row_labels.add(t)
+            self.add(self.row_labels)
+        self.col_labels = VGroup()
+        if col_labels:
+            for c, lab in enumerate(col_labels):
+                t = _txt(lab, label_size, color=T.MUTED, weight="BOLD")
+                t.next_to(self.boxes[0][c], UP, buff=0.15)
+                self.col_labels.add(t)
+            self.add(self.col_labels)
+        self.move_to([0, 0, 0])
+
+    def _make_text(self, v, box, color=T.FG):
+        s = str(v)
+        if s == "":
+            t = _txt("0", self.size).set_opacity(0)     # invisible placeholder
+        else:
+            t = _txt(s, self.size, color=color)
+        if t.width > self.cell_w * 0.85:
+            t.scale_to_fit_width(self.cell_w * 0.85)
+        return t.move_to(box)
+
+    def cell(self, r, c):
+        return VGroup(self.boxes[r][c], self.texts[r][c])
+
+    def target_text(self, r, c, value, color=T.FG):
+        """A Text positioned in cell (r, c), not yet part of the grid (use with put)."""
+        return self._make_text(value, self.boxes[r][c], color=color)
+
+    def put(self, r, c, mob):
+        """Make `mob` the text of cell (r, c), replacing the old one (no animation)."""
+        old = self.texts[r][c]
+        self.body.remove(old)
+        self.body.add(mob)
+        self.texts[r][c] = mob
+        return self
+
+    def set_text(self, r, c, value, color=T.FG):
+        """Animation: the cell's text changes to `value`."""
+        new = self.target_text(r, c, value, color)
+        old = self.texts[r][c]
+        self.texts[r][c] = old   # Transform morphs old into new in place
+        return Transform(old, new)
+
+    def highlight_cell(self, r, c, color=T.YELLOW):
+        return self.boxes[r][c].animate.set_stroke(color=color, width=4)
+
+    def highlight_col(self, c, color=T.YELLOW, opacity: float = 0.25):
+        return AnimationGroup(*[self.boxes[r][c].animate.set_fill(color, opacity)
+                                .set_stroke(color, 3) for r in range(self.n_rows)])
+
+    def clear_col(self, c):
+        return AnimationGroup(*[self.boxes[r][c].animate.set_fill(T.FAINT, 0.9)
+                                .set_stroke(T.MUTED, 1.5) for r in range(self.n_rows)])
+
+    def highlight_row(self, r, color=T.YELLOW, opacity: float = 0.25):
+        return AnimationGroup(*[self.boxes[r][c].animate.set_fill(color, opacity)
+                                .set_stroke(color, 3) for c in range(self.n_cols)])
+
+
+class Chip(VGroup):
+    """A small pill with text, e.g. a candidate sum "2 + 3 = 5" or a tag "+4"."""
+
+    def __init__(self, text: str, color=T.BLUE, size: int = T.SMALL_SIZE + 2,
+                 text_color=None, filled: bool = False, **kwargs):
+        super().__init__(**kwargs)
+        self.layout_name = f"Chip {text}"
+        self.color = color
+        label = _txt(text, size, color=text_color or (T.BG if filled else T.FG), weight="BOLD")
+        pill = RoundedRectangle(corner_radius=0.16, width=label.width + 0.4,
+                                height=label.height + 0.26, stroke_color=color, stroke_width=2.5,
+                                fill_color=color if filled else T.FAINT,
+                                fill_opacity=1 if filled else 0.95)
+        label.move_to(pill)
+        self.pill, self.label = pill, label
+        self.add(pill, label)
+
+    def win(self):
+        """Animation: highlight as the chosen option."""
+        return AnimationGroup(self.pill.animate.set_stroke(T.GREEN, 5).set_fill(T.GREEN, 0.3),
+                              self.label.animate.set_color(T.GREEN))
+
+    def lose(self):
+        """Animation: fade back as a rejected option."""
+        return self.animate.set_opacity(0.3)
