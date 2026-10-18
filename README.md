@@ -8,8 +8,9 @@ material into custom explainer videos, books and other study formats.
 | Skill | What it does |
 |---|---|
 | [`skills/cs-video`](skills/cs-video/SKILL.md) | Narrated, captioned CS explainer videos from a topic prompt (Manim + Kokoro TTS) |
+| [`skills/zh-topic`](skills/zh-topic/SKILL.md) | Mandarin ink-style video + HSK 4–5 traditional-character EPUB on the same topic |
 
-Planned: epub book generation, Chinese-language video formats.
+
 
 ## Quick start (cs-video)
 

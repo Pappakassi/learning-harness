@@ -101,11 +101,11 @@ class CSScene(VoiceoverScene):
             new.set_color_by_gradient(*T.TITLE_GRADIENT)
         if new.width > T.FRAME_W - 2 * T.SAFE_MARGIN:
             new.scale_to_fit_width(T.FRAME_W - 2 * T.SAFE_MARGIN)
-        if self._title is None:
+        old, self._title = self._title, new      # set first so the layout check knows it
+        if old is None:
             self.play(FadeIn(new, shift=DOWN * 0.2), run_time=run_time)
         else:
-            self.play(ReplacementTransform(self._title, new), run_time=run_time)
-        self._title = new
+            self.play(ReplacementTransform(old, new), run_time=run_time)
         return new
 
     def clear_content(self, run_time: float = 0.6, keep_title: bool = True):

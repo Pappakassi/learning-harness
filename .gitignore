@@ -10,3 +10,7 @@ media/
 layout_report.txt
 .DS_Store
 **/voices/*.bin
+skills/zh-topic/fonts/*.ttf
+skills/zh-topic/data/hsk.json
+skills/zh-topic/data/naturalearth/
+skills/zh-topic/topics/*/backdrop.png

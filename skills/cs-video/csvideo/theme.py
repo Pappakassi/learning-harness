@@ -52,3 +52,31 @@ BG_TOP = ManimColor("#121A3A")
 BG_BOTTOM = ManimColor("#1B0F2E")
 BLOBS = [((-5.5, 2.5), CYAN, 3.2), ((5.8, -2.2), PINK, 3.4), ((1.5, 3.4), PURPLE, 2.6)]
 COLORFUL = True     # set False for the plain dark style
+
+# ---------------------------------------------------------------------------
+# Alternative themes, chosen with the CSVIDEO_THEME environment variable
+# (must be set before csvideo is imported).
+# ---------------------------------------------------------------------------
+import os as _os
+
+if _os.environ.get("CSVIDEO_THEME") == "ink":
+    # Zen / sumi-e: rice paper, ink, one red seal accent, glacier blue.
+    BG = ManimColor("#F3EDE1")
+    FG = ManimColor("#1F1B17")
+    MUTED = ManimColor("#857C70")
+    FAINT = ManimColor("#E6DECF")
+    RED = ManimColor("#B23A2E")
+    BLUE = ManimColor("#4F7A93")
+    CYAN = ManimColor("#6E9DB4")
+    GREEN = ManimColor("#5F7652")
+    YELLOW = ManimColor("#A8853A")
+    ORANGE = ManimColor("#B5672F")
+    PURPLE = ManimColor("#6B5B7A")
+    PINK = ManimColor("#A65A63")
+    LIME = ManimColor("#7D8F55")
+    CORAL = RED
+    PALETTE = [FG, BLUE, RED, GREEN, MUTED, CYAN]
+    TITLE_GRADIENT = [FG, FG]
+    BODY_FONT = "LXGW WenKai TC"
+    CODE_FONT = "LXGW WenKai TC"
+    COLORFUL = False
