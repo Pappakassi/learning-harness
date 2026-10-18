@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+build/
+media/
+**/voices/*.onnx
+**/voices/*.onnx.json
+**/voices/*.tar.gz
+**/voices/MODEL_CARD
+layout_report.txt
+.DS_Store
