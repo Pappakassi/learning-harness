@@ -11,7 +11,7 @@ compose with everything else in a scene.
 """
 from __future__ import annotations
 
-from manim import (DOWN, LEFT, RIGHT, UP, AnimationGroup, Arrow, FadeIn, FadeOut,
+from manim import (DOWN, LEFT, RIGHT, UP, logger, AnimationGroup, Arrow, FadeIn, FadeOut,
                    Rectangle, RoundedRectangle, Square, Text, Transform, VGroup)
 
 from . import theme as T
@@ -247,7 +247,7 @@ class BulletList(VGroup):
     """Left-aligned bullet points. Reveal one at a time with .reveal(i)."""
 
     def __init__(self, items, size: int = T.BODY_SIZE, max_width: float = 11.0,
-                 bullet_color=T.BLUE, **kwargs):
+                 bullet_color=T.BLUE, spacing: float = 0.4, **kwargs):
         super().__init__(**kwargs)
         self.layout_name = "BulletList"
         for it in items:
@@ -255,7 +255,7 @@ class BulletList(VGroup):
             txt = _txt(it, size)
             row = VGroup(dot, txt).arrange(RIGHT, buff=0.25)
             self.add(row)
-        self.arrange(DOWN, buff=0.4, aligned_edge=LEFT)
+        self.arrange(DOWN, buff=spacing, aligned_edge=LEFT)
         if self.width > max_width:
             self.scale_to_fit_width(max_width)
         for row in self:
@@ -287,6 +287,35 @@ class Counter(VGroup):
     def set(self, value):
         self.value = value
         return Transform(self, self._build(value))
+
+
+class Card(VGroup):
+    """A box with a bold heading and a short body, e.g. one option among several.
+
+    Use "\\n" in body to break lines. Arrange several with VGroup(...).arrange(RIGHT).
+    """
+
+    def __init__(self, heading: str, body: str = "", color=T.BLUE, width: float = 4.0,
+                 size: int = T.SMALL_SIZE + 2, min_height: float = 0.0, **kwargs):
+        super().__init__(**kwargs)
+        self.layout_name = f"Card {heading[:20]}"
+        head = _txt(heading, size + 4, color=color, weight="BOLD")
+        parts = [head]
+        if body:
+            parts.append(_txt(body, size, color=T.FG, line_spacing=0.9))
+        content = VGroup(*parts).arrange(DOWN, buff=0.25, aligned_edge=LEFT)
+        if content.width > width - 0.5:
+            from .scene_base import report
+            report(f"[Card '{heading}'] text was shrunk to fit; use a smaller size, "
+                   f"a wider card or shorter lines so cards in a row match")
+            content.scale_to_fit_width(width - 0.5)
+        h = max(content.height + 0.6, min_height)
+        box = RoundedRectangle(corner_radius=0.15, width=width, height=h,
+                               stroke_color=color, stroke_width=3, fill_color=T.FAINT,
+                               fill_opacity=1)
+        content.move_to(box).align_to(box.get_top() + DOWN * 0.3, UP)
+        self.box, self.heading = box, head
+        self.add(box, content)
 
 
 class Callout(VGroup):

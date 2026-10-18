@@ -30,6 +30,13 @@ CAPTION_CHARS = 70
 CAPTION_MAX_LINES = 3
 
 
+def report(msg: str):
+    """Write a warning to the layout report (shown at the end of render.py)."""
+    logger.warning(msg)
+    with REPORT_PATH.open("a") as f:
+        f.write(msg + "\n")
+
+
 class SilentService(SpeechService):
     """Draft-mode speech: silence with the length real speech would roughly take."""
 

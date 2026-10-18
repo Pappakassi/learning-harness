@@ -65,6 +65,12 @@ class Intro(CSScene):
 | `Counter("checks", 0, fmt="{:,}")` | step / comparison counts | `set(n)` |
 | `BulletList([...])` | recap points | `reveal(i)` |
 | `Callout(text, color)` | the key sentence of a scene | — |
+| `Card(heading, body, color, width, min_height)` | options / fixes side by side; use `"\n"` in body; same `min_height` for a row | — (warns if text had to shrink) |
+| `NetTree({child: parent}, kinds={...}, notes={...})` | networks laid out top-down (sender / router / host) | `send(src, dsts, label)`, `gather(srcs, dst, "ACK")` → `(packets, anim)`; `tree["A"].flash(color)`, `.reset()`, `link(a, b)`, `path(a, b)` |
+| `NetNode(name, kind)` | a single host / router / sender | `flash(color)`, `reset()`, `set_note(text)` |
+| `Packet(label, color)` | a packet in flight | `travel(points)` (one hop per time slice; hidden until it starts) |
+
+Example using the network templates: `videos/reliable_multicast/video.py`.
 
 **Scene helpers** (`CSScene`): `show_title(text)`, `say(text)` (context manager, yields
 a tracker with `.duration`), `clear_content()`, `make_text(s, size, color)`.
