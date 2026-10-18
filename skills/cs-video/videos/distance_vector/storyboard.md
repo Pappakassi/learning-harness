@@ -25,10 +25,16 @@ Vectors [D(A), D(B), D(C), D(D), D(E), D(F)]:
 
 | # | Scene | On screen | Narration (gist) |
 |---|-------|-----------|------------------|
-| 1 | `Setup` | Weighted graph: B in the middle, links to A (4), C (2), E (6). D and F as faded "?" nodes. Each neighbour sends its vector as a coloured packet to B; the vectors land as rows of a grid. | B only knows its own links. Its neighbours tell it how far they are from everyone. |
-| 2 | `Rule` | Bellman–Ford formula, then in words: "link cost + what the neighbour claims". Two misconception chips: "don't forget the link cost" and "next hop ≠ destination". | The rule, and the two classic mistakes. |
-| 3 | `Compute` | Vector grid (rows A, C, E with +4/+2/+6 tags) left; routing table right. Per destination: column lights up, three sum chips appear, the smallest glows green, its number flies into the table. A and D in detail, C/E/F quicker. | One column at a time: add, compare, keep the smallest. |
-| 4 | `Result` | Graph again: D and F revealed behind C; packets stream B→C→D and B→C→F; final table beside it. Recap line. | C is the next hop for three destinations, because C is cheap to reach and close to D and F. |
+| 1 | `Hook` | B alone in a fog of dots, a packet "to F" with a "?". Then "cheapest route: 3, via C". | B has never seen F, yet in a minute it'll know the cheapest route. How? |
+| 2 | `Gossip` | B's three links appear; D, F ghosted. Neighbours' vectors pop up as speech bubbles, then fly into a table. | Neighbours gossip their distances. |
+| 3 | `FirstRace` | Race bars to D (link cost + claim, same speed). C finishes first at 5. | Picture first: race the three routes. |
+| 4 | `Rule` | Bellman–Ford formula with braces; two trap cards. | What you watched has a name. Two traps. |
+| 5 | `Races` | Quick races for A, C, E filling the table; F is "your turn" with a 3-second countdown, then the reveal. | One race per destination; viewer predicts F. |
+| 6 | `Payoff` | Map with D, F behind C; packets stream along every route. | B learned it all from gossip. |
+| 7 | `Teaser` | C–D link breaks; B and C ping-pong rising guesses 5→7→…→15. | Count to infinity, next video. |
+
+**Hook:** "B has never seen F, yet will know the cheapest route." **Your turn:** F. **Teaser:** count to infinity
+(in this network it stops at C = 15 / B = 13 because B's route via E costs 13).
 
 **Misconceptions:** forgetting to add the link cost to the neighbour's number; writing the
 destination itself as the next hop for non-neighbours (D, F).

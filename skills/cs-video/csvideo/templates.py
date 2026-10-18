@@ -11,7 +11,9 @@ compose with everything else in a scene.
 """
 from __future__ import annotations
 
-from manim import (DOWN, LEFT, RIGHT, UP, logger, AnimationGroup, Arrow, FadeIn, FadeOut,
+import numpy as np
+from manim import (DOWN, LEFT, RIGHT, UP, logger, AnimationGroup, Arrow, FadeIn, FadeOut, Line,
+                   Polygon,
                    Rectangle, RoundedRectangle, Square, Text, Transform, VGroup)
 
 from . import theme as T
@@ -460,3 +462,30 @@ class Chip(VGroup):
     def lose(self):
         """Animation: fade back as a rejected option."""
         return self.animate.set_opacity(0.3)
+
+
+class Bubble(VGroup):
+    """A speech bubble: a node 'saying' something, e.g. its distance vector.
+
+        b = Bubble("D is 3 away\\nF is 1 away", T.LIME, tail="left").next_to(node, RIGHT)
+    tail: "down", "up", "left" or "right" (the side the tail points out of).
+    """
+
+    def __init__(self, text: str, color=T.BLUE, tail: str = "down", size: int = T.SMALL_SIZE + 2,
+                 **kwargs):
+        super().__init__(**kwargs)
+        self.layout_name = "Bubble"
+        label = _txt(text, size, color=T.FG, line_spacing=0.9)
+        body = RoundedRectangle(corner_radius=0.18, width=label.width + 0.45,
+                                height=label.height + 0.35, stroke_color=color, stroke_width=3,
+                                fill_color=T.FAINT, fill_opacity=1)
+        label.move_to(body)
+        d = {"down": DOWN, "up": UP, "left": LEFT, "right": RIGHT}[tail]
+        base = body.get_edge_center(d)
+        perp = np.array([d[1], -d[0], 0]) * 0.16
+        tip = base + d * 0.28
+        tri = Polygon(base + perp - d * 0.02, base - perp - d * 0.02, tip,
+                      stroke_color=color, stroke_width=3, fill_color=T.FAINT, fill_opacity=1)
+        cover = Line(base + perp * 0.85, base - perp * 0.85, stroke_color=T.FAINT, stroke_width=5)
+        self.body, self.label, self.tail_tip = body, label, tip
+        self.add(tri, body, cover, label)

@@ -47,6 +47,39 @@ Create `videos/<topic_slug>/storyboard.md` (copy the shape of
   indices and pointer moves, so the animation can't drift from the real algorithm.
 - **Scene table**: 3–6 scenes, each with what is on screen + gist of narration.
 - **One misconception** to address explicitly.
+- **Hook, your-turn moment and teaser** (see *Make it engaging* below): write each
+  one down in the storyboard before writing any code.
+
+### Make it engaging (from research on instructional video)
+
+Sources: Guo, Kim & Rubin 2014 (edX engagement study), Mayer's multimedia learning
+principles, Grant Sanderson (3Blue1Brown) on visuals and story.
+
+1. **Hook in the first ~10 seconds.** Open on the puzzle, not a title card: show the
+   situation and ask the question the video answers ("B has never seen F, yet in a
+   minute it'll know the cheapest route to it. How?"). Title card after the hook.
+2. **Keep it short and segmented.** Shorter videos hold attention better. Aim for 2–4
+   minutes; split into chapters with a clear visual change between them (new title,
+   new layout). If a topic needs more, make a series.
+3. **Picture first, then the rule.** Show the mechanism working on the example
+   *before* the formula or definition appears; then name it ("that's all
+   Bellman–Ford says"). The formula should feel like a summary of what was seen.
+4. **Turn numbers into things you can see.** Costs become lengths (race bars),
+   load becomes a gauge, traffic becomes a swarm. Avoid screens of text and
+   tables-only scenes; free-form drawn visuals beat slide-like layouts.
+5. **A "your turn" moment.** At least once, pose a question on screen, start a
+   `Countdown`, stay silent for 3 seconds, then reveal. Let the viewer predict.
+6. **Signal where to look.** Highlight the one thing being talked about and dim the
+   rest; animate exactly when the narration mentions it. Don't put extra text on
+   screen that repeats the narration (captions already do that).
+7. **Conversational voice.** "You", "we", short sentences, a bit of energy; no
+   lecture tone. Keep the pace brisk (`CSVIDEO_SPEED=1.05` is fine).
+8. **Story arc.** Problem → struggle or misconception → payoff. Give the climax a
+   moment (glow, burst, all routes lighting up).
+9. **Change something every ~10–20 seconds** (new motion, zoom, colour, layout) so
+   the screen never sits still through long narration.
+10. **End with a teaser**, not just a recap: one line on what goes wrong next or what
+    to learn next, with a quick visual hint.
 
 ## 2. Write `videos/<topic_slug>/video.py`
 
@@ -82,6 +115,7 @@ class Intro(CSScene):
 | `NetGraph({name: (x, y)}, {(a, b): cost}, kinds=, colors=, dashed=)` | weighted graphs with cost labels (routing, shortest paths) | `edge(a, b)`, `cost(a, b)`, `highlight_edge(a, b, color)`, `g["A"]` |
 | `GridView(values, row_labels=, col_labels=, row_colors=)` | tables: distance vectors, routing tables, DP tables | `highlight_col(c)`, `highlight_cell(r, c)`, `target_text(r, c, v)` + `put(r, c, mob)`, `set_text(r, c, v)` |
 | `Chip(text, color)` | small pill: a candidate sum, a tag like "+4" | `win()`, `lose()` |
+| `Bubble(text, color, tail=)` | a node "saying" something (gossip, claims) | — |
 
 Examples: network templates in `videos/reliable_multicast/video.py`; graph + tables in `videos/distance_vector/video.py`.
 
@@ -95,8 +129,11 @@ Examples: network templates in `videos/reliable_multicast/video.py`; graph + tab
 | `glow(mob, color)` | soft halo behind a mobject (`FadeIn` it; don't set_opacity) |
 | `shake(mob)` | jitter for overload / error moments |
 | `scatter_ring(center, rx, ry, n)` | points for a crowd of hosts around a center |
+| `RaceBars(rows, origin=, unit=)` | compare totals as bars racing at equal speed; shortest finishes first. `to(v)`, `best_total()`, `crown()`, `max_total()` |
+| `Countdown(3)` | "your turn" pause: ring empties, `run()` (play it outside a `say()` block = silence) |
 
-Style example (zoom-out to a crowd, swarm, overload): `videos/reliable_multicast/creative_sample.py`.
+Style examples: `videos/reliable_multicast/creative_sample.py` (zoom-out, swarm, overload) and
+`videos/distance_vector/video.py` (hook, gossip bubbles, route races, your-turn countdown, teaser).
 Prefer this kind of motion (zooming out to show scale, things streaming, meters
 reacting) over static boxes appearing one by one.
 

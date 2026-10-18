@@ -2,9 +2,9 @@
 from . import theme
 from .network import NetGraph, NetNode, NetTree, Packet
 from .scene_base import CSScene, make_text
-from .templates import (ArrayView, BulletList, Callout, Card, Chip, CodePanel, Counter, GridView,
-                        Pointers)
+from .templates import (ArrayView, Bubble, BulletList, Callout, Card, Chip, CodePanel, Counter,
+                        GridView, Pointers)
 
 __all__ = ["theme", "CSScene", "make_text", "ArrayView", "Pointers", "CodePanel",
-           "BulletList", "Callout", "Card", "Chip", "Counter", "GridView", "NetGraph", "NetNode",
+           "Bubble", "BulletList", "Callout", "Card", "Chip", "Counter", "GridView", "NetGraph", "NetNode",
            "NetTree", "Packet"]
