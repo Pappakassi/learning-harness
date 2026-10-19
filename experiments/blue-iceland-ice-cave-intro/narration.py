@@ -23,20 +23,47 @@ SR = 48000
 SPEAKERS = {"guide": 64, "tourist": 3}       # zm_015 (male), zf_001 (female)
 SPEED = {"guide": 0.9, "tourist": 0.95}
 
-# (id, pause before in seconds, who, text). The id names the scene the line belongs to.
+# (id, pause before in seconds, who, sentences). Each sentence: (spoken text, Chinese caption, English caption).
+# The spoken text can differ from the caption (the English greeting is split at a Chinese comma for a pause).
 LINES = [
-    ("hello", 3.2, "guide", "大家好！欢迎参加我们的冰洞之旅。我是你们今天的向导。"),
-    ("jeep", 0.6, "guide", "我们先坐上这辆大大的超级吉普车，它叫乌尼莫克。"),
-    ("drive", 0.7, "guide", "开车大约三十分钟，就到冰川了。路上有点颠，请坐好。"),
-    ("gear", 0.9, "guide", "到了停车场，每个人都会拿到一个头盔和一副冰爪。"),
-    ("carry", 0.5, "guide", "头盔请戴好。冰爪请自己拿着，从停车场一直带到冰洞。"),
-    ("ask", 0.8, "tourist", "走过去要多久？"),
-    ("walk", 0.4, "guide", "大约三十分钟。我们要走过一片冰碛，就是冰川留下的石头和沙子。"),
-    ("hard", 0.4, "guide", "路不平，有一点难度。请慢慢走，注意脚下。"),
-    ("cave", 1.0, "guide", "冰洞里会有很多别的旅行团。请一直跟着我们的团，千万不要走散。"),
-    ("photo", 0.9, "tourist", "我可以把头盔摘下来拍照吗？"),
-    ("helmet", 0.3, "guide", "不可以！整个行程中，任何时候都不能摘下头盔。"),
-    ("ready", 1.0, "guide", "请穿好登山靴和暖和的衣服。准备好了吗？我们出发吧！"),
+    ("hello", 3.8, "guide", [
+        ("Hello，my name is Henry。", "Hello! My name is Henry.", ""),
+        ("大家好！我叫亨利。", "大家好！我叫亨利。", "Hi everyone! I'm Henry."),
+        ("欢迎参加我们的冰洞之旅。我是你们今天的向导。", "欢迎参加我们的冰洞之旅。我是你们今天的向导。", "Welcome to our ice cave tour. I'm your guide today."),
+    ]),
+    ("jeep", 0.6, "guide", [("我们先坐上这辆大大的超级吉普车，它叫乌尼莫克。", None, "First we get into this big super jeep. It's called a Unimog.")]),
+    ("drive", 0.7, "guide", [
+        ("开车大约三十分钟，就到冰川了。", None, "It's about a 30-minute drive to the glacier."),
+        ("路上有点颠，请坐好。", None, "The road is a bit bumpy, so please stay seated."),
+    ]),
+    ("gear", 0.9, "guide", [("到了停车场，每个人都会拿到一个头盔和一副冰爪。", None, "At the parking lot, everyone gets a helmet and a pair of crampons.")]),
+    ("carry", 0.5, "guide", [
+        ("头盔请戴好。", None, "Please put your helmet on."),
+        ("冰爪请自己拿着，从停车场一直带到冰洞。", None, "Carry your own crampons from the parking lot all the way to the cave."),
+    ]),
+    ("ask", 0.8, "tourist", [("走过去要多久？", None, "How long is the walk?")]),
+    ("walk", 0.4, "guide", [
+        ("大约三十分钟。", None, "About 30 minutes."),
+        ("我们要走过一片冰碛，就是冰川留下的石头和沙子。", None, "We cross a glacier moraine: rocks and sand left behind by the glacier."),
+    ]),
+    ("hard", 0.4, "guide", [
+        ("路不平，有一点难度。", None, "The ground is uneven and moderately challenging."),
+        ("请慢慢走，注意脚下。", None, "Walk slowly and watch your step."),
+    ]),
+    ("cave", 1.0, "guide", [
+        ("冰洞里会有很多别的旅行团。", None, "There are many other tour groups in the cave."),
+        ("请一直跟着我们的团，千万不要走散。", None, "Always stay with our group. Never wander off."),
+    ]),
+    ("photo", 0.9, "tourist", [("我可以把头盔摘下来拍照吗？", None, "Can I take my helmet off for a photo?")]),
+    ("helmet", 0.3, "guide", [
+        ("不可以！", None, "No!"),
+        ("整个行程中，任何时候都不能摘下头盔。", None, "Never take your helmet off, at any time during the trip."),
+    ]),
+    ("ready", 1.0, "guide", [
+        ("请穿好登山靴和暖和的衣服。", None, "Please wear hiking boots and warm clothes."),
+        ("准备好了吗？", None, "Are you ready?"),
+        ("我们出发吧！", None, "Let's go!"),
+    ]),
 ]
 SENT = re.compile(r"(?<=[。！？])")
 
@@ -68,10 +95,11 @@ def mouth_track(x, sr, fps=30):
 def main():
     tts = SherpaZhService._load()
     placed, cursor = [], 0.0
-    for lid, gap, who, text in LINES:
+    for lid, gap, who, sentences in LINES:
+        text = "".join(c or z for z, c, _ in sentences)
         at = round(cursor + gap, 2)
         chunks, phrases, sents, pos, sr = [], [], [], 0, 24000
-        for sent in [s for s in SENT.split(text) if s.strip()]:
+        for sent, cap, en in sentences:
             s0 = pos
             for chunk, pause in pieces(sent):
                 g = tts.generate(chunk, sid=SPEAKERS[who], speed=SPEED[who])
@@ -84,7 +112,7 @@ def main():
                     n = int(sr * pause)
                     chunks.append(np.zeros(n, dtype=np.float32))
                     pos += n
-            sents.append([sent, s0, pos])
+            sents.append([cap or sent, s0, pos, en])
         a = np.concatenate(chunks)
         a = np.interp(np.arange(0, len(a) * SR / sr) * sr / SR, np.arange(len(a)), a).astype(np.float32)
         loud = np.abs(a) > 0.01
@@ -92,7 +120,7 @@ def main():
         f = lambda p: round(at + p / sr, 3)  # noqa: E731
         placed.append({"id": lid, "t": at, "end": round(at + len(a) / SR, 3), "who": who, "text": text,
                        "phrases": [[c, f(p)] for c, p in phrases],
-                       "sents": [[s, f(p0), f(p1)] for s, p0, p1 in sents], "_a": a})
+                       "sents": [[s, f(p0), f(p1), en] for s, p0, p1, en in sents], "_a": a})
         cursor = at + len(a) / SR
         print(f"{lid:7s} {who:8s} {at:6.2f} -> {placed[-1]['end']:6.2f}  {text}")
     end = placed[-1]["end"] + 8.0

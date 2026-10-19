@@ -11,14 +11,15 @@
   const ZH = 'WenKai, "Noto Sans CJK SC", sans-serif';
   const LAT = 'Inter, sans-serif';
   const HEAD = -404; // head centre in a standing person's own units
-  const RED = '#D9412F', INK = '#1F1B17', ICE = '#2F7FB5';
+  const RED = '#D9412F', INK = '#1F1B17', ICE = '#2F7FB5', HELMET = '#33A6D8';
+  const LOGO_DARK = '#3D67A8', LOGO_LIGHT = '#8FBEE2', LOGO_NAVY = '#14305A';
   const between = (t, a, b) => t >= a && t < b;
   const pop = (t, t0, d = 0.35) => ease.outBack(clamp((t - t0) / d));
 
   // ---------- cast ----------
   const STY = {
-    guide: { skin: Ch.SKIN_TONES[1], hair: '#5A3A22', hairStyle: 'short', facialHair: 'trimmed', outfit: 'hoodie',
-      shirt: '#C8402F', trim: '#8E2A1F', bottoms: 'pants', shorts: '#2E3440', headwear: 'cap', headwearColor: '#2E3440', shoes: '#4A3426' },
+    guide: { skin: '#F1CDB0', hair: '#9A7350', hairStyle: 'quiff', facialHair: 'none', outfit: 'hoodie', eyeColor: '#6E9FC4',
+      shirt: '#E2782C', trim: '#B85A1C', bottoms: 'pants', shorts: '#2E3440', headwear: 'none', beanie: '#6B2A35', shoes: '#4A3426' },
     asker: { skin: Ch.SKIN_TONES[0], hair: '#1E1A18', hairStyle: 'ponytail', outfit: 'hoodie', shirt: '#3B7EA1', trim: '#2B5E79',
       bottoms: 'pants', shorts: '#3A3F4A', glasses: 'round', build: 'slim', shoes: '#5A4232' },
     friend: { skin: Ch.SKIN_TONES[1], hair: '#151515', hairStyle: 'short', outfit: 'hoodie', shirt: '#E0A33A', trim: '#B47E23',
@@ -35,7 +36,7 @@
   // a person; o.helmet puts the helmet on, o.crampon hangs crampons from the right hand
   function actor(ctx, id, x, y, s, t, o = {}) {
     const st = Object.assign({}, STY[id]);
-    if (o.helmet) { st.headwear = 'helmet'; st.headwearColor = o.helmetColor || RED; }
+    if (o.helmet) { st.headwear = 'helmet'; st.headwearColor = o.helmetColor || HELMET; }
     else if (o.bare) st.headwear = 'none';
     const p = {
       x, y, s: s * SIZE[id], pose: o.walk != null ? 'walk' : 'stand', walk: o.walk || 0, style: st,
@@ -45,7 +46,18 @@
     };
     const role = id === 'guide' ? 'guide' : id === 'asker' ? 'tourist' : null;
     if (role) { const mm = Subs.mouth(VO, t, role); if (mm.talking) p.mouth = mm; }
+    const k = p.s, bob0 = p.pose === 'walk' ? -Math.abs(Math.sin(2 * Math.PI * p.walk)) * 12 * k : 0;
+    const P = (u, v) => [x + u * k, y + v * k + bob0];
+    if (id === 'guide') { // the backpack peeks out behind the shoulders
+      const [bx, by] = P(0, -360);
+      G.rrect(ctx, bx - 95 * k, by - 20 * k, 190 * k, 170 * k, 30 * k, { fill: '#2B2D33', lw: 4 * k, seed: 391 });
+    }
     Ch.person(ctx, p);
+    if (id === 'guide') { // shoulder straps and the chest strap
+      for (const sd of [-1, 1]) G.line(ctx, [P(sd * 46, -318), P(sd * 50, -250), P(sd * 56, -190)], { lw: 12 * k, color: '#2B2D33', seed: 392 + sd });
+      G.line(ctx, [P(-50, -262), P(50, -262)], { lw: 6 * k, color: '#2B2D33', seed: 395 });
+      G.rrect(ctx, P(-9, -270)[0], P(-9, -270)[1], 18 * k, 16 * k, 3 * k, { fill: '#55595F', lw: 2 * k, seed: 396 });
+    }
     if (o.crampon) {
       const k = p.s, hand = o.handR || [92, -180];
       const bob = p.pose === 'walk' ? -Math.abs(Math.sin(2 * Math.PI * p.walk)) * 12 * k : 0;
@@ -70,7 +82,7 @@
     G.poly(ctx, [[-14, 30], [0, 12], [14, 30]], { fill: '#DDE3E8', lw: 2.5, seed: 420, step: 30 });
     ctx.restore();
   }
-  function helmetIcon(ctx, x, y, s, color = RED) {
+  function helmetIcon(ctx, x, y, s, color = HELMET) {
     ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
     Ch.headwear(ctx, { headwear: 'helmet', headwearColor: color }, 7);
     ctx.restore();
@@ -118,8 +130,8 @@
     // chassis and fenders
     G.rrect(ctx, -440, -210, 880, 46, 10, { fill: '#2A2D33', lw: 4, seed: 501 });
     // passenger box
-    G.rrect(ctx, -450, -520, 600, 320, 30, { fill: '#2F4A63', lw: 5, seed: 502, hatch: { color: 'rgba(255,255,255,0.06)', gap: 9 } });
-    G.rrect(ctx, -450, -330, 600, 30, 8, { fill: '#E9B73E', lw: 3.5, seed: 503 });
+    G.rrect(ctx, -450, -520, 600, 320, 30, { fill: '#C9352B', lw: 5, seed: 502, hatch: { color: 'rgba(90,10,0,0.14)', gap: 9 } });
+    G.rrect(ctx, -450, -330, 600, 30, 8, { fill: '#F4F1EA', lw: 3.5, seed: 503 });
     G.rrect(ctx, -460, -548, 620, 30, 10, { fill: '#3A3E45', lw: 3.5, seed: 504 }); // roof rack
     for (let k = 0; k < 6; k++) G.line(ctx, [[-440 + k * 118, -548], [-440 + k * 118, -575]], { lw: 4, color: '#3A3E45', seed: 505 + k });
     G.line(ctx, [[-450, -575], [150, -575]], { lw: 5, color: '#3A3E45', seed: 512 });
@@ -142,13 +154,13 @@
       ctx.save(); ctx.globalAlpha *= 0.5; G.line(ctx, [[wx + 14, -470], [wx + 40, -470]], { lw: 5, color: '#FFFFFF', seed: 555 + k }); ctx.restore();
     }
     // door with steps
-    G.line(ctx, [[-430 + 4 * 140, -500], [-430 + 4 * 140, -215]], { lw: 3, color: '#1D2F40', seed: 560 });
+    G.line(ctx, [[-430 + 4 * 140, -500], [-430 + 4 * 140, -215]], { lw: 3, color: '#7A1C15', seed: 560 });
     G.rrect(ctx, 120, -200, 60, 14, 4, { fill: '#55595F', lw: 3, seed: 561 });
     // cab
-    G.poly(ctx, [[160, -470], [330, -470], [400, -330], [460, -300], [470, -210], [160, -210]], { fill: '#2F4A63', lw: 5, seed: 562, step: 30 });
+    G.poly(ctx, [[160, -470], [330, -470], [400, -330], [460, -300], [470, -210], [160, -210]], { fill: '#C9352B', lw: 5, seed: 562, step: 30 });
     G.poly(ctx, [[190, -446], [318, -446], [372, -336], [190, -336]], { fill: '#BFE1F2', lw: 4, seed: 563, step: 30 });
-    G.ellipse(ctx, 260, -384, 30, 34, { fill: Ch.SKIN_TONES[1], lw: 3.5, seed: 564 });
-    G.ellipse(ctx, 260, -414, 32, 14, { fill: '#2E3440', lw: 3, seed: 565 });
+    G.ellipse(ctx, 260, -384, 30, 34, { fill: '#F1CDB0', lw: 3.5, seed: 564 });
+    G.ellipse(ctx, 260, -414, 32, 14, { fill: '#9A7350', lw: 3, seed: 565 });
     G.rrect(ctx, 440, -290, 26, 30, 8, { fill: '#F6E27A', lw: 3, seed: 566 }); // headlight
     G.rrect(ctx, 430, -230, 50, 34, 8, { fill: '#2A2D33', lw: 3.5, seed: 567 }); // bumper
     G.rrect(ctx, 140, -520, 20, 120, 6, { fill: '#2A2D33', lw: 3, seed: 568 }); // snorkel
@@ -288,15 +300,17 @@
     const [text, s0, s1] = line.sents[si];
     const last = si === line.sents.length - 1;
     const a = clamp((t - s0 + 0.12) / 0.15) * (last ? 1 - clamp((t - line.end - 0.15) / 0.2) : 1);
-    const size = Y(52);
-    const tw = G.measure(ctx, text, size, ZH, 500);
+    const en = line.sents[si][3];
+    const size = Y(50), enSize = Y(29);
+    const tw = Math.max(G.measure(ctx, text, size, ZH, 500), en ? G.measure(ctx, en, enSize, LAT, 600) : 0);
     const sc = Math.min(1, (W - X(260)) / tw);
-    const w = tw * sc, y = H - Y(70);
+    const w = tw * sc, y = H - Y(en ? 98 : 64);
     ctx.save(); ctx.globalAlpha = a;
-    G.tornPaper(ctx, W / 2 - w / 2 - X(46), y - Y(72), w + X(92), Y(104), { fill: 'rgba(255,253,248,0.93)', seed: 7 + si, shadow: true });
-    const who = line.who === 'guide' ? '向导' : '游客';
-    G.text(ctx, who, W / 2 - w / 2 - X(32), y - Y(50), { size: Y(20), fam: ZH, color: line.who === 'guide' ? RED : ICE, boil: 0 });
+    G.tornPaper(ctx, W / 2 - w / 2 - X(46), y - Y(70), w + X(92), Y(en ? 146 : 100), { fill: 'rgba(255,253,248,0.93)', seed: 7 + si, shadow: true });
+    const who = line.who === 'guide' ? '亨利 · 向导' : '游客';
+    G.text(ctx, who, W / 2 - w / 2 - X(32), y - Y(48), { size: Y(20), fam: ZH, color: line.who === 'guide' ? '#C25E18' : ICE, boil: 0 });
     G.text(ctx, text, W / 2, y, { size: size * sc, fam: ZH, weight: 500, color: INK, align: 'center', boil: 0 });
+    if (en) G.text(ctx, en, W / 2, y + Y(48), { size: enSize * sc, fam: LAT, weight: 600, color: '#5D6B78', align: 'center', boil: 0 });
     ctx.restore();
     void s1;
   }
@@ -327,18 +341,88 @@
       zh(c, '乌尼莫克', 0, -Y(8), Y(62));
       zh(c, '超级吉普车', 0, Y(44), Y(34), '#5D6B78');
     }, { rot: 0.03, seed: 41 });
-    title(ctx, t, 0, ev.hello + 1.2);
+    title(ctx, t, 0, ev.hello + 2.7);
+  }
+  // the Blue Iceland logo (the company's own artwork, cleaned into layers by prep: assets/logo-*.png),
+  // given a cartoon finish: a hand-inked outline, a little hatching and a boil, and letters that drop in.
+  const LOGO = { letters: [[0, 338], [364, 634], [646, 1021], [1049, 1335], [1419, 1556], [1579, 1949], [1973, 2256], [2279, 2989], [2996, 3367], [3407, 3793]],
+    word: [18, 12, 1282, 97], tag: [18, 112, 460, 132], band: [18, 142, 1282, 158], S: 3 };
+  const IMG = {};
+  // letters + hatching (once), and an ink silhouette for the outline
+  function inked(img) {
+    const c = G.makeCanvas(img.width, img.height), x = c.getContext('2d');
+    x.drawImage(img, 0, 0);
+    x.globalCompositeOperation = 'source-atop';
+    x.strokeStyle = 'rgba(10,30,60,0.13)'; x.lineWidth = 5;
+    for (let k = -img.height; k < img.width; k += 22) { x.beginPath(); x.moveTo(k, img.height); x.lineTo(k + img.height * 0.9, 0); x.stroke(); }
+    x.fillStyle = 'rgba(255,255,255,0.22)'; x.fillRect(0, 0, img.width, img.height * 0.16); // a soft top highlight
+    const sil = G.makeCanvas(img.width, img.height), y = sil.getContext('2d');
+    y.drawImage(img, 0, 0); y.globalCompositeOperation = 'source-in'; y.fillStyle = INK; y.fillRect(0, 0, img.width, img.height);
+    return { art: c, sil };
+  }
+  async function loadLogo() {
+    for (const k of ['word', 'tag']) IMG[k] = inked(await Studio.loadImage(`assets/logo-${k}.png`));
+  }
+  // draw part (sx0..sx1 of the source image) at destination (dx, dy, dw, dh) with an inked outline
+  function inkPart(ctx, part, sx0, sx1, dx, dy, dw, dh, r) {
+    const sh = part.art.height;
+    for (let k = 0; k < 12; k++) {
+      const a = (k / 12) * Math.PI * 2;
+      ctx.drawImage(part.sil, sx0, 0, sx1 - sx0, sh, dx + Math.cos(a) * r, dy + Math.sin(a) * r, dw, dh);
+    }
+    ctx.drawImage(part.art, sx0, 0, sx1 - sx0, sh, dx, dy, dw, dh);
+  }
+  // drawn centred at (0,0); width = the wordmark's width on screen
+  function logo(ctx, t, t0, { line = '冰洞探险 · 出发前须知', width = X(1300) } = {}) {
+    if (!IMG.word) return;
+    const k = width / (LOGO.word[2] - LOGO.word[0]); // screen px per original-logo px
+    const ox = (LOGO.word[0] + LOGO.word[2]) / 2, oy = 85;
+    const P = (x, y) => [(x - ox) * k, (y - oy) * k];
+    const S = LOGO.S, r = Math.max(2.5, k * 1.6);
+    const [wx, wy] = P(LOGO.word[0], LOGO.word[1]);
+    const wh = (LOGO.word[3] - LOGO.word[1]) * k;
+    LOGO.letters.forEach(([a, b], i) => {
+      const td = t0 + 0.07 * i, u = clamp((t - td) / 0.45);
+      if (u <= 0) return;
+      const drop = (1 - ease.outBack(u)) * -wh * 1.4;
+      const squash = 1 + Math.sin(clamp((t - td - 0.32) / 0.22) * Math.PI) * 0.07;
+      const wob = (U.hash(i, Math.floor(t * 8)) - 0.5) * 0.012; // a slight hand-drawn boil
+      const dx = wx + (a / S) * k, dw = ((b - a) / S) * k;
+      ctx.save(); ctx.globalAlpha *= clamp(u * 3);
+      ctx.translate(dx + dw / 2, wy + wh + drop); ctx.rotate(wob); ctx.scale(squash, 2 - squash);
+      inkPart(ctx, IMG.word, a, b, -dw / 2, -wh, dw, wh, r);
+      ctx.restore();
+    });
+    // sparkles over the letters once they have landed
+    for (let q = 0; q < 5; q++) {
+      const st = t0 + 1.1 + q * 0.37, v = ((t - st) % 2.2) / 0.6;
+      if (t < st || v > 1) continue;
+      ctx.save(); ctx.globalAlpha *= Math.sin(v * Math.PI);
+      G.star(ctx, wx + width * U.hash(q, 11), wy + wh * (0.1 + 0.6 * U.hash(q, 12)), wh * 0.16 * (0.6 + v * 0.6), { fill: '#FFFFFF', rot: v, lw: 2 });
+      ctx.restore();
+    }
+    // tagline, then the navy band drawn across, then our line
+    const ta = clamp((t - t0 - 0.9) / 0.4);
+    if (ta > 0) {
+      ctx.save(); ctx.globalAlpha *= ta;
+      const [tx, ty] = P(LOGO.tag[0], LOGO.tag[1]);
+      const tw = (LOGO.tag[2] - LOGO.tag[0]) * k, th = (LOGO.tag[3] - LOGO.tag[1]) * k;
+      inkPart(ctx, IMG.tag, 0, IMG.tag.art.width, tx - (1 - ta) * X(30), ty, tw, th, Math.max(1, r * 0.35));
+      const [bx, by] = P(LOGO.band[0], LOGO.band[1]);
+      const bw = width * ease.outCubic(clamp((t - t0 - 1.1) / 0.5)), bh = (LOGO.band[3] - LOGO.band[1]) * k;
+      if (bw > 4) G.rrect(ctx, bx, by, bw, bh, bh * 0.3, { fill: LOGO_NAVY, lw: 3.5, seed: 990 });
+      const la = clamp((t - t0 - 1.5) / 0.4);
+      if (line && la > 0) { ctx.globalAlpha *= la; zh(ctx, line, 0, by + bh + Y(62), Y(52), LOGO_NAVY); }
+      ctx.restore();
+    }
   }
   function title(ctx, t, t0, t1) {
-    const a = clamp((t - t0 - 0.2) / 0.6), out = clamp((t1 - t) / 0.5);
+    const a = clamp((t - t0 - 0.1) / 0.4), out = clamp((t1 - t) / 0.5);
     if (a <= 0 || out <= 0) return;
     ctx.save(); ctx.globalAlpha = a * out;
-    const k = 0.92 + 0.08 * ease.outBack(a);
-    ctx.translate(W / 2, Y(260)); ctx.scale(k, k);
-    G.tornPaper(ctx, -X(420), -Y(150), X(840), Y(290), { fill: 'rgba(255,253,248,0.95)', seed: 12, shadow: true });
-    G.text(ctx, 'Blue Iceland', 0, -Y(50), { size: Y(58), fam: LAT, weight: 800, color: ICE, align: 'center', boil: 0 });
-    zh(ctx, '冰洞探险', 0, Y(50), Y(104));
-    zh(ctx, '出发前须知', 0, Y(112), Y(38), '#5D6B78');
+    ctx.translate(W / 2, Y(250));
+    G.tornPaper(ctx, -X(720), -Y(190), X(1440), Y(380), { fill: 'rgba(255,253,248,0.96)', seed: 12, shadow: true });
+    logo(ctx, t, t0 + 0.3);
     ctx.restore();
   }
 
@@ -635,14 +719,13 @@
     const dt = t - ev.outro;
     const x = X(700) + Math.pow(Math.max(0, dt - 0.8), 1.6) * X(160);
     unimog(ctx, x, Y(905), X(0.72), { roll: Math.pow(Math.max(0, dt - 0.8), 1.6) * X(160) / X(0.72 * 110), bounce: Math.abs(Math.sin(dt * 7)) * 6, faces: 4, t });
-    const a = clamp((dt - 0.6) / 0.6);
+    const a = clamp((dt - 0.4) / 0.4);
     ctx.save(); ctx.globalAlpha = a;
-    const k = 0.92 + 0.08 * ease.outBack(a);
-    ctx.translate(W / 2, Y(250)); ctx.scale(k, k);
-    G.tornPaper(ctx, -X(460), -Y(160), X(920), Y(320), { fill: 'rgba(255,253,248,0.95)', seed: 13, shadow: true });
-    G.text(ctx, 'Blue Iceland', 0, -Y(66), { size: Y(56), fam: LAT, weight: 800, color: ICE, align: 'center', boil: 0 });
-    zh(ctx, '冰洞探险', 0, Y(30), Y(96));
-    zh(ctx, '跟紧团队 · 全程戴头盔', 0, Y(110), Y(42), RED);
+    ctx.translate(W / 2, Y(260));
+    G.tornPaper(ctx, -X(720), -Y(190), X(1440), Y(430), { fill: 'rgba(255,253,248,0.96)', seed: 13, shadow: true });
+    logo(ctx, t, ev.outro + 0.5, { line: '跟紧团队 · 全程戴头盔' });
+    const ea = clamp((dt - 2.4) / 0.5);
+    if (ea > 0) { ctx.globalAlpha *= ea; G.text(ctx, 'Stay with your group · Keep your helmet on', 0, Y(200), { size: Y(30), fam: LAT, weight: 600, color: '#5D6B78', align: 'center', boil: 0 }); }
     ctx.restore();
     snow(ctx, t, 40);
   }
@@ -658,7 +741,7 @@
   ]);
 
   Studio.film({
-    async init() { await Studio.loadFont('WenKai', 'assets/LXGWWenKai-sub.ttf', 500); },
+    async init() { await Studio.loadFont('WenKai', 'assets/LXGWWenKai-sub.ttf', 500); await loadLogo(); },
     draw(ctx, t) {
       film(ctx, t);
       caption(ctx, t);
