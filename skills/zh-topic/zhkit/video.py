@@ -115,8 +115,8 @@ class ZhScene(CSScene):
         if os.environ.get("CSVIDEO_DRAFT") == "1":
             self.set_speech_service(SilentZh())
         else:
-            from .voice_zh import KokoroZhService
-            self.set_speech_service(KokoroZhService())
+            from .voice_zh import make_zh_service
+            self.set_speech_service(make_zh_service())
         self.camera.background_color = T.BG
         if self.backdrop_path and Path(self.backdrop_path).exists():
             bg = ImageMobject(str(self.backdrop_path))

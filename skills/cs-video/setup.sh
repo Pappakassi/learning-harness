@@ -37,6 +37,14 @@ for f in kokoro-v1.0.onnx voices-v1.0.bin; do
   fi
 done
 
+# Kokoro v1.1-zh (Mandarin-trained) packaged for sherpa-onnx, used by zh-topic
+if [ ! -d voices/kokoro-multi-lang-v1_1 ]; then
+  echo "Downloading Kokoro v1.1 multilingual (Mandarin) model (~360 MB)..."
+  curl -sSL -o voices/kml.tar.bz2 \
+    https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-multi-lang-v1_1.tar.bz2
+  tar xjf voices/kml.tar.bz2 -C voices && rm voices/kml.tar.bz2
+fi
+
 # Piper: smaller fallback voice (CSVIDEO_TTS=piper)
 if [ ! -f voices/en-us-lessac-medium.onnx ]; then
   echo "Downloading Piper fallback voice..."

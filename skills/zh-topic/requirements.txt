@@ -5,3 +5,4 @@ pypinyin
 jieba
 fonttools
 pillow<12
+sherpa-onnx

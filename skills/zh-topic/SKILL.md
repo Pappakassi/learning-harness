@@ -125,6 +125,9 @@ one-line summary each. Commit `research.md`, `book.txt`, `storyboard.md`, `video
 
 ## Voices
 
-`CSVIDEO_ZH_VOICE`: `zf_xiaobei` (default), `zf_xiaoxiao`, `zm_yunjian`, `zm_yunxi`, …;
-`CSVIDEO_SPEED` (1.0 default). Character script: traditional by default; for simplified,
-write the text in simplified and use `to_simplified` for any generated labels.
+Default: **Kokoro v1.1-zh** (Mandarin-trained) via sherpa-onnx, male voice `zm_015`
+(`CSVIDEO_ZH_SPEAKER=64`), **10% slower** (`CSVIDEO_ZH_SPEED=0.9`), with short pauses
+inserted at Chinese punctuation (comma ≈ 0.22 s, full stop ≈ 0.45 s; `PAUSES` in
+`zhkit/voice_zh.py`). Female: speaker 3 (`zf_001`), 47 (`zf_083`), 55 (`zf_093`); other
+male: 60 (`zm_011`). Fallback: `CSVIDEO_ZH_ENGINE=kokoro10` (Kokoro v1.0 + misaki).
+Write numbers like 一〇一 freely; the voice reads 〇 as 零.
