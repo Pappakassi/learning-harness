@@ -6,7 +6,12 @@
   const Subs = globalThis.Subs, Shots = globalThis.Shots;
   const { ev, VO } = S;
   const { clamp, lerp, ease } = U;
-  const W = G.W, H = G.H;
+  // The film is drawn on a 1920x1080 stage. For a phone (9:16) render, the stage goes into the middle
+  // band of the frame with the camera following the action (VFOCUS), signs move to the top band and the
+  // captions to the bottom band, bigger.
+  const VERT = G.H > G.W;
+  const W = 1920, H = 1080;
+  const OVER = []; // signs collected for the top band (portrait only)
   const X = (x) => (x * W) / 1920, Y = (y) => (y * H) / 1080;
   const ZH = 'WenKai, "Noto Sans CJK SC", sans-serif';
   const LAT = 'Inter, sans-serif';
@@ -238,10 +243,17 @@
 
   // ---------- signs ----------
   // a pop-up card centred at (x, y); inner(ctx) draws in the card's own coordinates (centre 0,0)
-  function card(ctx, t, t0, t1, x, y, w, h, inner, { rot = 0, seed = 1, fill = 'rgba(255,253,248,0.96)' } = {}) {
+  function card(ctx, t, t0, t1, x, y, w, h, inner, { rot = 0, seed = 1, fill = 'rgba(255,253,248,0.96)', stage = false } = {}) {
     const a = clamp((t - t0) / 0.4), out = t1 == null ? 1 : clamp((t1 - t) / 0.3);
     if (a <= 0 || out <= 0) return;
     const k = ease.outBack(a) * (0.7 + 0.3 * out);
+    if (VERT && !stage) {
+      OVER.push({ x, w, h, draw(c) {
+        c.save(); c.globalAlpha *= out; c.rotate(rot); c.scale(k, k);
+        G.tornPaper(c, -w / 2, -h / 2, w, h, { fill, seed, shadow: true }); inner(c); c.restore();
+      } });
+      return;
+    }
     ctx.save(); ctx.globalAlpha *= out; ctx.translate(x, y); ctx.rotate(rot); ctx.scale(k, k);
     G.tornPaper(ctx, -w / 2, -h / 2, w, h, { fill, seed, shadow: true });
     inner(ctx);
@@ -260,10 +272,10 @@
     G.ellipse(ctx, x, y, 7, 7, { fill: INK, lw: 0, seed: 721 });
   }
   function clockCard(ctx, t, t0, t1, x, y) {
-    card(ctx, t, t0, t1, x, y, X(380), Y(170), (c) => {
-      clockFace(c, -X(110), 0, Y(58), ease.inOutQuad(clamp((t - t0 - 0.3) / 2.2)));
-      zh(c, '约', X(20), Y(-18), Y(34), '#5D6B78', 'left');
-      zh(c, '30 分钟', X(20), Y(42), Y(58), INK, 'left');
+    card(ctx, t, t0, t1, x, y, X(420), Y(170), (c) => {
+      clockFace(c, -X(130), 0, Y(58), ease.inOutQuad(clamp((t - t0 - 0.3) / 2.2)));
+      zh(c, '约', -X(40), Y(-18), Y(34), '#5D6B78', 'left');
+      zh(c, '30 分钟', -X(40), Y(42), Y(58), INK, 'left');
     }, { rot: -0.03, seed: 31 });
   }
   function meterCard(ctx, t, t0, t1, x, y) {
@@ -419,6 +431,14 @@
   function title(ctx, t, t0, t1) {
     const a = clamp((t - t0 - 0.1) / 0.4), out = clamp((t1 - t) / 0.5);
     if (a <= 0 || out <= 0) return;
+    if (VERT) {
+      OVER.push({ big: true, x: 960, w: 1440, h: 380, draw(c) {
+        c.save(); c.globalAlpha *= a * out;
+        G.tornPaper(c, -720, -190, 1440, 380, { fill: 'rgba(255,253,248,0.96)', seed: 12, shadow: true });
+        logo(c, t, t0 + 0.3); c.restore();
+      } });
+      return;
+    }
     ctx.save(); ctx.globalAlpha = a * out;
     ctx.translate(W / 2, Y(250));
     G.tornPaper(ctx, -X(720), -Y(190), X(1440), Y(380), { fill: 'rgba(255,253,248,0.96)', seed: 12, shadow: true });
@@ -456,7 +476,7 @@
   }
 
   // 3 · the parking lot: helmets and crampons
-  const LOT = { guide: 330, asker: 760, friend: 920, kid: 1070, elder: 1220 };
+  const LOT = VERT ? { guide: 470, asker: 740, friend: 870, kid: 990, elder: 1110 } : { guide: 330, asker: 760, friend: 920, kid: 1070, elder: 1220 };
   const giveT = (kind, i) => (kind === 'helmet' ? ev.helmet : ev.crampon) + i * 0.22;
   function shotGear(ctx, t) {
     sky(ctx);
@@ -567,7 +587,7 @@
       zh(c, '冰碛', 0, -Y(14), Y(62));
       if (t > ev.rocks) zh(c, '= 石头 + 沙子', 0, Y(50), Y(38), '#5D6B78');
     }, { rot: 0.02, seed: 71 });
-    if (between(t, ev.moraine + 0.3, ev.hard)) {
+    if (!VERT && between(t, ev.moraine + 0.3, ev.hard)) {
       const a = clamp((t - ev.moraine - 0.3) / 0.4);
       ctx.save(); ctx.globalAlpha = a;
       G.line(ctx, [[X(1440), Y(260)], [X(1500), Y(560)], [X(1560), Y(800)]], { lw: 5, color: INK, seed: 72 });
@@ -580,7 +600,11 @@
 
   // 5 · inside the ice cave: other groups, stay together, the helmet rule
   const CAVE = { guide: 460, asker: 760, friend: 900, kid: 1030, elder: 1160 };
-  const OTHERS = [
+  const OTHERS = VERT ? [
+    { x: 420, y: 720, s: 0.3, helmet: '#F2C94C', shirts: ['#3E6B8E', '#A04A3A', '#4C7A4A'] },
+    { x: 1330, y: 730, s: 0.32, helmet: '#F4F4F0', shirts: ['#C27A2A', '#2F5E7E', '#7E2F4A'] },
+    { x: 880, y: 640, s: 0.22, helmet: '#4CA35A', shirts: ['#B84A3A', '#3A5A8A', '#D0A040'] },
+  ] : [
     { x: 260, y: 720, s: 0.3, helmet: '#F2C94C', shirts: ['#3E6B8E', '#A04A3A', '#4C7A4A', '#8A6AA8'] },
     { x: 1560, y: 730, s: 0.32, helmet: '#F4F4F0', shirts: ['#C27A2A', '#2F5E7E', '#7E2F4A', '#5A5A62'] },
     { x: 1020, y: 640, s: 0.22, helmet: '#4CA35A', shirts: ['#B84A3A', '#3A5A8A', '#D0A040'] },
@@ -642,7 +666,8 @@
     }
     // the kid wanders toward the white helmets, then comes back
     const strayU = clamp((t - ev.stray) / 1.2) * (1 - clamp((t - ev.stray - 1.8) / 1.0));
-    const kidX = X(lerp(CAVE.kid, 1420, ease.inOutQuad(strayU)));
+    const STRAY = VERT ? 1300 : 1420;
+    const kidX = X(lerp(CAVE.kid, STRAY, ease.inOutQuad(strayU)));
     const lift = clamp((t - ev.lift) / 0.6) * (1 - clamp((t - ev.no - 0.3) / 0.5));
     const order = ['elder', 'kid', 'friend', 'asker'];
     for (const id of order) {
@@ -668,7 +693,7 @@
     actor(ctx, 'guide', X(CAVE.guide), gy, X(0.66), t, g);
     if (between(t, ev.stray + 0.9, ev.stray + 2.6)) {
       const a = pop(t, ev.stray + 0.9);
-      ctx.save(); ctx.translate(X(1420), Y(500)); ctx.scale(a, a);
+      ctx.save(); ctx.translate(X(STRAY), Y(500)); ctx.scale(a, a);
       G.ellipse(ctx, 0, 0, X(52), X(52), { fill: '#FFFFFF', lw: 4, seed: 951 });
       G.line(ctx, [[-X(22), -X(22)], [X(22), X(22)]], { lw: 10, color: '#D02A1E', seed: 952 });
       G.line(ctx, [[X(22), -X(22)], [-X(22), X(22)]], { lw: 10, color: '#D02A1E', seed: 953 });
@@ -677,11 +702,14 @@
     ctx.restore();
     // screen-space signs
     OTHERS.forEach((og, gi) => {
-      card(ctx, t, ev.groups + gi * 0.3, ev.follow, X(og.x), Y(og.y - 260 * og.s / 0.3 - 60), X(260), Y(80), (c) => zh(c, '别的旅行团', 0, Y(14), Y(36)), { rot: (gi - 1) * 0.03, seed: 61 + gi });
+      card(ctx, t, ev.groups + gi * 0.3, ev.follow, X(og.x), Y(og.y - 260 * og.s / 0.3 - 60), X(260), Y(80), (c) => zh(c, '别的旅行团', 0, Y(14), Y(36)), { rot: (gi - 1) * 0.03, seed: 61 + gi, stage: true });
     });
     card(ctx, t, ev.follow + 0.3, ev.photo - 0.3, X(960), Y(150), X(560), Y(140), (c) => { zh(c, '跟紧我们的团！', 0, Y(20), Y(60)); }, { rot: -0.02, seed: 66 });
     card(ctx, t, ev.stray + 0.6, ev.photo - 0.3, X(960), Y(290), X(380), Y(100), (c) => { zh(c, '不要走散', 0, Y(16), Y(46), RED); }, { rot: 0.03, seed: 67 });
-    if (t > ev.no + 0.05) noSign(ctx, X(1420), Y(330), X(150), ev.no + 0.05, t);
+    if (t > ev.no + 0.05) {
+      if (VERT) OVER.push({ x: 1420, w: 330, h: 330, draw: (c) => noSign(c, 0, 0, 150, ev.no + 0.05, t) });
+      else noSign(ctx, X(1420), Y(330), X(150), ev.no + 0.05, t);
+    }
     card(ctx, t, ev.rule, null, X(1420), Y(610), X(500), Y(150), (c) => {
       zh(c, '整个行程', 0, -Y(16), Y(44), '#5D6B78'); zh(c, '不能摘头盔', 0, Y(46), Y(58), RED);
     }, { rot: -0.02, seed: 68 });
@@ -720,6 +748,18 @@
     const x = X(700) + Math.pow(Math.max(0, dt - 0.8), 1.6) * X(160);
     unimog(ctx, x, Y(905), X(0.72), { roll: Math.pow(Math.max(0, dt - 0.8), 1.6) * X(160) / X(0.72 * 110), bounce: Math.abs(Math.sin(dt * 7)) * 6, faces: 4, t });
     const a = clamp((dt - 0.4) / 0.4);
+    if (VERT) {
+      OVER.push({ big: true, x: 960, w: 1440, h: 430, draw(c) {
+        c.save(); c.globalAlpha *= a; c.translate(0, -20);
+        G.tornPaper(c, -720, -190, 1440, 430, { fill: 'rgba(255,253,248,0.96)', seed: 13, shadow: true });
+        logo(c, t, ev.outro + 0.5, { line: '跟紧团队 · 全程戴头盔' });
+        const ea = clamp((dt - 2.4) / 0.5);
+        if (ea > 0) { c.globalAlpha *= ea; G.text(c, 'Stay with your group · Keep your helmet on', 0, 200, { size: 34, fam: LAT, weight: 600, color: '#5D6B78', align: 'center', boil: 0 }); }
+        c.restore();
+      } });
+      snow(ctx, t, 40);
+      return;
+    }
     ctx.save(); ctx.globalAlpha = a;
     ctx.translate(W / 2, Y(260));
     G.tornPaper(ctx, -X(720), -Y(190), X(1440), Y(430), { fill: 'rgba(255,253,248,0.96)', seed: 13, shadow: true });
@@ -740,11 +780,140 @@
     { at: S.cuts.outro, draw: (ctx, t) => shotOutro(ctx, t), in: { type: 'fade', dur: 0.8 } },
   ]);
 
+  // ---------- portrait (9:16) ----------
+  const TOP = 400, BAND = 1140, BOT = TOP + BAND; // top band (signs), stage band, bottom band (captions)
+  const CY = 180; // stage rows above this (mostly sky) are cropped off in portrait
+  const SK = BAND / (H - CY), VIEW = G.W / SK; // stage px visible across the phone's width
+  // where the camera looks on the stage: [time, x]; a key with cut:true jumps, others ease in over 1.2 s
+  function walkFocus(t) { return clamp(walkPos(1, t).x + 120, 640, 1300); }
+  const FOCUS = [
+    [0, 720, true], [ev.jeep + 0.6, 1330], [S.cuts.drive, 960, true], [S.cuts.gear, 790, true],
+    [S.cuts.walk, 'walk', true], [S.cuts.cave, 810, true], [ev.stray + 0.2, 1000], [ev.stray + 3.0, 810],
+    [S.cuts.ready, 660, true], [ev.go - 0.5, 700], [S.cuts.outro, 'truck', true],
+  ];
+  function focusVal(v, t) {
+    if (v === 'walk') return walkFocus(t);
+    if (v === 'truck') { const dt = t - ev.outro; return clamp(700 + Math.pow(Math.max(0, dt - 0.8), 1.6) * 160, 700, 1400); }
+    return v;
+  }
+  function vfocus(t) {
+    let i = 0; while (i < FOCUS.length - 1 && t >= FOCUS[i + 1][0]) i++;
+    const cur = FOCUS[i], prev = FOCUS[i - 1];
+    const x = focusVal(cur[1], t);
+    if (!prev || cur[2]) return x;
+    const u = ease.inOutCubic(clamp((t - cur[0]) / 1.2));
+    return lerp(focusVal(prev[1], t), x, u);
+  }
+  let STAGE = null;
+  function portrait(ctx, t) {
+    if (!STAGE) STAGE = G.makeCanvas(W, H);
+    const sc = STAGE.getContext('2d');
+    OVER.length = 0;
+    // draw the stage at 1920x1080 (the transitions read G.W/G.H)
+    const gw = G.W, gh = G.H, gs = G.scale;
+    G.W = W; G.H = H; G.scale = 1;
+    sc.setTransform(1, 0, 0, 1, 0, 0); sc.globalAlpha = 1; sc.fillStyle = '#050508'; sc.fillRect(0, 0, W, H);
+    try { film(sc, t); } finally { G.W = gw; G.H = gh; G.scale = gs; }
+    // background of the two bands
+    ctx.fillStyle = '#F4F1EA'; ctx.fillRect(0, 0, G.W, G.H);
+    const fx = clamp(vfocus(t), VIEW / 2, W - VIEW / 2);
+    ctx.drawImage(STAGE, fx - VIEW / 2, CY, VIEW, H - CY, 0, TOP, G.W, BAND);
+    // band edges: a torn paper lip over the picture
+    G.tornPaper(ctx, -20, TOP - 30, G.W + 40, 36, { fill: '#F4F1EA', seed: 3, shadow: true, tear: 6 });
+    G.tornPaper(ctx, -20, BOT - 6, G.W + 40, 40, { fill: '#F4F1EA', seed: 4, shadow: true, tear: 6 });
+    topBand(ctx, t);
+    captionV(ctx, t);
+  }
+  function topBand(ctx, t) {
+    const big = OVER.find((o) => o.big);
+    if (big) { // the logo card fills the band
+      const k = Math.min((G.W - 60) / big.w, (TOP - 20) / big.h);
+      ctx.save(); ctx.translate(G.W / 2, TOP / 2 - 6); ctx.scale(k, k); big.draw(ctx); ctx.restore();
+      return;
+    }
+    // a small logo on top, the signs underneath in rows
+    if (IMG.word) {
+      ctx.save(); ctx.translate(G.W / 2, 64);
+      const w = 560, h = w * (LOGO.word[3] - LOGO.word[1]) / (LOGO.word[2] - LOGO.word[0]);
+      inkPart(ctx, IMG.word, 0, IMG.word.art.width, -w / 2, -h / 2, w, h, 1.6);
+      ctx.restore();
+    }
+    const items = OVER.slice().sort((a, b) => a.x - b.x);
+    if (!items.length) return;
+    const areaY = 112, areaH = TOP - areaY - 26, maxW = G.W - 60, gap = 26;
+    // fit: try one row, else two rows, shrinking as needed
+    const rowsOf = (n) => (n === 1 ? [items] : [items.slice(0, Math.ceil(items.length / 2)), items.slice(Math.ceil(items.length / 2))]);
+    let best = null;
+    for (const n of items.length > 1 ? [1, 2] : [1]) {
+      const rows = rowsOf(n);
+      const k = Math.min(1, ...rows.map((r) => maxW / (r.reduce((s, o) => s + o.w, 0) + gap * (r.length - 1))),
+        areaH / (rows.reduce((s, r) => s + Math.max(...r.map((o) => o.h)), 0) + gap * (rows.length - 1)));
+      if (!best || k > best.k) best = { rows, k };
+    }
+    const { rows, k } = best;
+    const totalH = rows.reduce((s, r) => s + Math.max(...r.map((o) => o.h)), 0) * k + gap * (rows.length - 1);
+    let y = areaY + (areaH - totalH) / 2;
+    for (const r of rows) {
+      const rh = Math.max(...r.map((o) => o.h)) * k;
+      const rw = r.reduce((s, o) => s + o.w, 0) * k + gap * (r.length - 1);
+      let x = (G.W - rw) / 2;
+      for (const o of r) {
+        ctx.save(); ctx.translate(x + o.w * k / 2, y + rh / 2); ctx.scale(k, k); o.draw(ctx); ctx.restore();
+        x += o.w * k + gap;
+      }
+      y += rh + gap;
+    }
+  }
+  // captions for the phone: bigger, wrapped onto two lines when needed
+  function wrap(ctx, text, size, fam, weight, maxW, words) {
+    const parts = words ? text.split(/(?<= )/) : [...text];
+    const lines = []; let cur = '';
+    for (const p of parts) {
+      const tryS = cur + p;
+      if (cur && G.measure(ctx, tryS.trim(), size, fam, weight) > maxW) { lines.push(cur.trim()); cur = p; } else cur = tryS;
+    }
+    if (cur.trim()) lines.push(cur.trim());
+    // keep closing punctuation off the start of a line
+    for (let i = 1; i < lines.length; i++) if (/^[，。！？、]/.test(lines[i])) { lines[i - 1] += lines[i][0]; lines[i] = lines[i].slice(1); }
+    return lines.filter(Boolean);
+  }
+  function captionV(ctx, t) {
+    const line = VO.lines.find((l) => t >= l.t - 0.1 && t <= l.end + 0.35);
+    if (!line) return;
+    let si = 0;
+    line.sents.forEach((s, i) => { if (t >= s[1] - 0.1) si = i; });
+    const [text, s0, , en] = line.sents[si];
+    const last = si === line.sents.length - 1;
+    const a = clamp((t - s0 + 0.12) / 0.15) * (last ? 1 - clamp((t - line.end - 0.15) / 0.2) : 1);
+    const zs = 60, es = 36, maxW = G.W - 150;
+    let zl = wrap(ctx, text, zs, ZH, 500, maxW, false);
+    if (zl.length === 2) { // break at the comma nearest the middle instead, when both halves fit
+      const cuts = [...text.matchAll(/[，、：；]/g)].map((m) => m.index + 1).filter((i) => i < text.length - 1);
+      cuts.sort((p, q) => Math.abs(p - text.length / 2) - Math.abs(q - text.length / 2));
+      for (const i of cuts) {
+        const A = text.slice(0, i), B = text.slice(i);
+        if (G.measure(ctx, A, zs, ZH, 500) <= maxW && G.measure(ctx, B, zs, ZH, 500) <= maxW) { zl = [A, B]; break; }
+      }
+    }
+    const el = en ? wrap(ctx, en, es, LAT, 600, maxW, true) : [];
+    const h = zl.length * zs * 1.25 + el.length * es * 1.3 + 70;
+    const y0 = BOT + 34 + (G.H - BOT - 34 - h) / 2;
+    ctx.save(); ctx.globalAlpha = a;
+    G.tornPaper(ctx, 36, y0, G.W - 72, h, { fill: 'rgba(255,253,248,0.97)', seed: 7 + si, shadow: true });
+    const who = line.who === 'guide' ? '亨利 · 向导' : '游客';
+    G.text(ctx, who, 64, y0 + 30, { size: 24, fam: ZH, color: line.who === 'guide' ? '#C25E18' : ICE, boil: 0 });
+    let y = y0 + 44 + zs;
+    for (const l of zl) { G.text(ctx, l, G.W / 2, y, { size: zs, fam: ZH, weight: 500, color: INK, align: 'center', boil: 0 }); y += zs * 1.25; }
+    y += 4;
+    for (const l of el) { G.text(ctx, l, G.W / 2, y, { size: es, fam: LAT, weight: 600, color: '#5D6B78', align: 'center', boil: 0 }); y += es * 1.3; }
+    ctx.restore();
+  }
+
   Studio.film({
     async init() { await Studio.loadFont('WenKai', 'assets/LXGWWenKai-sub.ttf', 500); await loadLogo(); },
     draw(ctx, t) {
-      film(ctx, t);
-      caption(ctx, t);
+      if (!VERT) { film(ctx, t); caption(ctx, t); return; }
+      portrait(ctx, t);
     },
     post: { paper: 0.4, vignette: 0.22, grain: 0.04 },
     fadeOut: 1.2,

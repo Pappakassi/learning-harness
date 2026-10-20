@@ -21,13 +21,12 @@ from zhkit.voice_zh import SherpaZhService, pieces  # noqa: E402
 
 SR = 48000
 SPEAKERS = {"guide": 64, "tourist": 3}       # zm_015 (male), zf_001 (female)
-SPEED = {"guide": 0.9, "tourist": 0.95}
+SPEED = {"guide": 1.0, "tourist": 1.0}   # normal speed (was 0.9 / 0.95)
 
 # (id, pause before in seconds, who, sentences). Each sentence: (spoken text, Chinese caption, English caption).
 # The spoken text can differ from the caption (the English greeting is split at a Chinese comma for a pause).
 LINES = [
     ("hello", 3.8, "guide", [
-        ("Hello，my name is Henry。", "Hello! My name is Henry.", ""),
         ("大家好！我叫亨利。", "大家好！我叫亨利。", "Hi everyone! I'm Henry."),
         ("欢迎参加我们的冰洞之旅。我是你们今天的向导。", "欢迎参加我们的冰洞之旅。我是你们今天的向导。", "Welcome to our ice cave tour. I'm your guide today."),
     ]),

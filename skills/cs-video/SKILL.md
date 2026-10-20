@@ -1,9 +1,14 @@
 ---
 name: cs-video
-description: Make a narrated computer-science explainer video (Manim animation + offline voice + captions) from a topic prompt, e.g. "make a video explaining quicksort partitioning". Use for algorithm, data-structure and CS-concept explainers delivered as MP4.
+description: Make a narrated explainer video from a topic prompt, delivered as MP4. Two styles - Manim diagrams for algorithms, data structures and CS concepts ("make a video explaining quicksort partitioning"), or a hand-drawn cartoon with talking characters, lip-sync, signs and captions ("make a cartoon video explaining X"), in English or Mandarin, wide 16:9 and phone 9:16.
 ---
 
 # CS explainer videos
+
+Two styles. **Manim** (sections 1–6): diagrams, arrays, graphs, code; the default for
+algorithms and data structures. **Cartoon** (section 7): drawn characters who talk
+(lip-synced), props and pop-up signs, captions; for stories, procedures, briefings,
+"explain it like a conversation" topics, or whenever the user asks for a cartoon.
 
 Turns a topic into a 1–4 minute narrated, captioned explainer video. The video is
 built from tested templates in `csvideo/` (arrays, pointers, code panels...), voiced
@@ -212,3 +217,53 @@ Default: **Kokoro** (offline, natural-sounding), voice `af_heart`. Change with e
 
 Changing the text, voice or speed re-generates that line's audio; unchanged lines
 come from cache.
+
+## 7. Cartoon style
+
+Characters drawn in code (the animation-studio engine), voiced per speaker, with
+lip-sync, pop-up signs, captions with an optional second-language line, and one
+`film.js` that renders both **16:9** and **9:16 (phone)**. Needs the
+**animation-studio** plugin (its engine is copied into each project), Node 22+ and Chrome.
+
+```bash
+.venv/bin/python cartoon/new_cartoon.py videos/<slug>_cartoon --lang en    # or --lang zh
+cd videos/<slug>_cartoon
+```
+The project starts as a working 25-second demo (a teacher shows binary search on a whiteboard).
+Replace it step by step:
+
+1. **Script** in `narration.py` `LINES`: `(id, pause_before, speaker, [(spoken, caption_or_None, second_caption), ...])`.
+   One sentence = one caption (≤ 2 lines). The second caption is optional (e.g. English under Chinese).
+   Voices: `VOICES` per speaker (English Kokoro names like `am_michael`, `af_heart`; Chinese
+   sherpa speaker ids, 64 = male zm_015, 3 = female zf_001), `SPEED` per speaker (1.0 = normal).
+   Spoken text can differ from the caption (spell numbers out, fix a pronunciation).
+   Run `../../.venv/bin/python narration.py` → `out/narration.wav`, `vo.js`.
+2. **Moments** in `score.js` `ev`: named times from the dialogue, `L.<id>.t` (line start),
+   `ph(id, k)` (phrase k: lines are split at punctuation), `sent(id, k)` (sentence k).
+   Every visual is timed to these, so re-recording the voice keeps everything in sync.
+3. **Scenes** in `film.js`, a pure function of `t` on a **1920×1080 stage**:
+   - `K.actor(ctx, style, x, y, scale, t, { role, gesture, look, eyes, brows, walk, helmet, ... })` -
+     a person (`Ch.person` styles: skin, hair, hairStyle, outfit, shirt, glasses, headwear, `eyeColor`);
+     `role` = the speaker id whose lines move its mouth. Gestures: wave, point, pointUp, thumbsUp,
+     think, cheer, shrug, clap... `walk` = cycle phase for a walking pose.
+   - `K.card(ctx, t, t0, t1, x, y, w, h, inner)` - a pop-up sign; `K.title(ctx, t, t0, t1, main, sub)`.
+   - Draw props with `G.*` (rrect, ellipse, poly, line, text, tornPaper, star...) - hand-drawn look.
+   - Shots and transitions with `Shots.film([...])` (fade, wipe, whip, iris, paper...).
+4. **Phone version**: `K.frame(ctx, t, film, FOCUS)` crops the stage to the middle band with the
+   camera at `FOCUS` (`[time, x, cut?]` keys, eases between), sends every card/title to the top band
+   and makes captions bigger at the bottom. The phone shows ≈ **850 stage px** across: keep each
+   moment's important things within that width, or use `K.VERT` to lay out tighter for 9:16.
+5. **Sound** in `song.js` (pad, pops, whooshes, footsteps from `engine/audio/instruments`), ducked under the voice.
+
+Check, render, deliver:
+```bash
+export CHROME_PATH=<chrome>        # in a container: a wrapper script that adds --no-sandbox
+node engine/render.js board <t1> <t2> ...                  # storyboard of chosen times; read it
+node engine/render.js board <t1> ... --format 9:16         # the phone layout
+node song.js
+node engine/render.js video && node engine/render.js mux   # out/<folder>.mp4 (~4 min per minute of film)
+node engine/render.js video --format 9:16 && node engine/render.js mux --format 9:16   # out/<folder>-9x16.mp4
+node engine/render.js check                                # contact sheet + loudness
+```
+For a phone-first audience deliver the 9:16 file first. A full worked example (Mandarin,
+English second captions, logo, helmets, walking group, cave): `experiments/blue-iceland-ice-cave-intro/`.
