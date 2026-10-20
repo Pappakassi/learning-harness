@@ -909,6 +909,11 @@
     ctx.restore();
   }
 
+  // helpers for the native phone film (film_v.js); in a 9:16 render that file draws the film instead
+  globalThis.BI = { actor, crampon, helmetIcon, boot, jacket, tick, unimog, ridge, iceCap, sky, clockFace, noSign, logo, loadLogo,
+    captionV, zh, STY, GROUP, SIZE, HEAD, HELMET, INK, RED, ICE, ZH, LAT, LOGO_NAVY, pop, between, wph };
+  if (VERT && !/crop=1/.test(globalThis.location ? location.search : '')) return;
+
   Studio.film({
     async init() { await Studio.loadFont('WenKai', 'assets/LXGWWenKai-sub.ttf', 500); await loadLogo(); },
     draw(ctx, t) {
