@@ -267,3 +267,16 @@ node engine/render.js check                                # contact sheet + lou
 ```
 For a phone-first audience deliver the 9:16 file first. A full worked example (Mandarin,
 English second captions, logo, helmets, walking group, cave): `experiments/blue-iceland-ice-cave-intro/`.
+
+## 8. Hybrid: cartoon cold open + Manim body (a series)
+
+For a YouTube-style series, open each episode with a 30–40 s cartoon scene (recurring characters
+hit the problem in everyday life and ask the question), then cut to the Manim explanation.
+`videos/tsam_series/` is a worked example (six TSAM computer-networks episodes):
+
+- `make_open.sh <episode-dir>` scaffolds `<episode-dir>/open/` (cartoon engine + shared `props.js`
+  cast and props, a generic `score.js` where every line id becomes `ev.<id>`, a `song.js` that reads
+  pops/whooshes from `sfx.json`). Write the dialogue in `open/lines.py`, the scene in `open/film.js`.
+- Render the body at 1080p30 with `render.py video.py -q f` (half the time of `-q h`).
+- `assemble.sh <episode-dir> <out.mp4>` loudness-matches both parts and joins them into one 1080p30 MP4.
+- On a 2-core machine run renders one at a time (a cartoon open takes ~10–15 min, a 4-min body ~25 min).

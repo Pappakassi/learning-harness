@@ -19,3 +19,7 @@ skills/zh-topic/topics/*/backdrop.png
 # cartoon projects: the engine is re-copied by cartoon/new_cartoon.py; renders are big
 skills/cs-video/videos/*_cartoon/engine/
 skills/cs-video/videos/*_cartoon/out/
+# hybrid videos: a cartoon cold open in <video>/open (engine re-copied by tsam_series/make_open.sh)
+skills/cs-video/videos/*/open/engine/
+skills/cs-video/videos/*/open/out/
+skills/cs-video/videos/tsam_series/final/

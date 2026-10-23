@@ -19,7 +19,8 @@ import sys
 from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
-QUALITY = {"l": ("-ql", "480p15"), "m": ("-qm", "720p30"), "h": ("-qh", "1080p60")}
+QUALITY = {"l": (["-ql"], "480p15"), "m": (["-qm"], "720p30"), "h": (["-qh"], "1080p60"),
+           "f": (["-qh", "--frame_rate", "30"], "1080p30")}   # f: 1080p at 30 fps (half the render time of h)
 
 
 def read_scenes(video: Path) -> list[str]:
@@ -70,7 +71,7 @@ def main():
         env["CSVIDEO_DRAFT"] = "1"
 
     media = build / ("media_draft" if args.draft else "media")
-    cmd = manim_exe() + [flag, "--media_dir", str(media), "--progress_bar", "none",
+    cmd = manim_exe() + [*flag, "--media_dir", str(media), "--progress_bar", "none",
                          "-v", "ERROR", str(video), *scenes]
     print("Rendering:", ", ".join(scenes))
     r = subprocess.run(cmd, env=env, cwd=video.parent)
