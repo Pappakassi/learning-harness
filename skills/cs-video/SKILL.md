@@ -280,3 +280,39 @@ hit the problem in everyday life and ask the question), then cut to the Manim ex
 - Render the body at 1080p30 with `render.py video.py -q f` (half the time of `-q h`).
 - `assemble.sh <episode-dir> <out.mp4>` loudness-matches both parts and joins them into one 1080p30 MP4.
 - On a 2-core machine run renders one at a time (a cartoon open takes ~10–15 min, a 4-min body ~25 min).
+
+## 9. StoryScene: 3Blue1Brown-style videos with Hr. Schiffel (preferred for new videos)
+
+`csvideo/story.py` + `csvideo/story_kit.py` + `csvideo/mascot.py`. Near-black background, a few fixed colours (`P`),
+thin captions without boxes (also exported as an `.srt` next to the MP4), a moving camera, and the series mascot,
+**Hr. Schiffel**: a fierce little gnome (red hat with a `</>` badge, rectangular glasses, beard below the chin) who
+reacts, speaks in his own gnome voice, and sings the theme. Examples: `videos/email_under_the_hood/`, `videos/ssh_under_the_hood/`.
+
+```python
+from csvideo.story import StoryScene, P, txt, theme_intro, theme_outro
+from csvideo.story_kit import Server, Laptop, Envelope, Key, Padlock, Terminal, ByteRow, pulse, trail_dot
+class Intro(StoryScene):
+    def construct(self):
+        theme_intro(self, "How email works", "subtitle")      # ~16 s sung theme; leaves the gnome bottom-right
+class Smtp(StoryScene):
+    def construct(self):
+        self.chapter("3. The SMTP conversation", label="3  SMTP")   # big title, shrinks to a corner label
+        g = self.add_gnome("fierce")                          # pinned to the screen corner (survives camera moves)
+        with self.say("Narration ..."): ...
+        with self.say("Ach! Just text!", who="gnome"): self.play(g.change("angry"))   # his voice, mouth moves
+        self.play(self.zoom_to(thing)); self.play(self.zoom_reset())
+        theme_outro(self)                                     # last scene: outro sting + "Tschüss!"
+```
+
+- Mascot API: moods `fierce | angry | thinking | surprised | lecturing | happy`; `g.change(mood, look=..., point="left")`,
+  `g.look_at(mob)`, `g.blink()`, `g.hop()`, `self.gnome_says("text")` (bubble, no voice).
+- Kit: `Terminal.type(line, who="C"|"S")` for protocol transcripts, `pulse(wire)` for signals, `trail_dot(points)`,
+  `Envelope`, `Key`, `Padlock(...).close()`, `Server`, `Laptop`, `ByteRow`.
+- Gnome voice: Kokoro `bm_george` pitched up (`CSVIDEO_GNOME_VOICE`, `CSVIDEO_GNOME_PITCH`, `CSVIDEO_GNOME_SPEED`).
+- Music: `node music/gnome_theme.js` makes `music/out/theme_intro.wav`, `bed.wav`, `outro.wav` (a gnome polka; the
+  intro has a sung chorus). After the final render add the bed under the narration:
+  `python scripts/add_music.py build/<x>_1080p30.mp4 --bed music/out/bed.wav --start 16.5 --end-trim 7 -o out.mp4`.
+- Render with `-q f` (1080p30). Layout checks are skipped while the camera is zoomed; check those frames by eye.
+- Style rules: one idea per screen; morph and move things instead of fading screens of text; let the gnome react
+  once or twice per chapter (short lines, a joke or a warning), never to repeat the narration.
+

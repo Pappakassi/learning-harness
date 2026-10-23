@@ -35,17 +35,27 @@ def make_speech_service() -> SpeechService:
     return KokoroService()
 
 
+def make_gnome_service() -> SpeechService:
+    """Hr. Schiffel's voice: a deep Kokoro voice pitched up into a small, gruff gnome.
+    CSVIDEO_GNOME_VOICE (default bm_george), CSVIDEO_GNOME_PITCH in cents (default 380),
+    CSVIDEO_GNOME_SPEED (default 1.08)."""
+    return KokoroService(voice=os.environ.get("CSVIDEO_GNOME_VOICE", "bm_george"),
+                         speed=float(os.environ.get("CSVIDEO_GNOME_SPEED", 1.08)),
+                         pitch_cents=int(os.environ.get("CSVIDEO_GNOME_PITCH", 380)))
+
+
 class KokoroService(SpeechService):
     """Kokoro TTS via kokoro-onnx. Runs locally, no network needed."""
 
     _engine = None  # loaded once per process
 
-    def __init__(self, voice: str | None = None, speed: float | None = None, **kwargs):
+    def __init__(self, voice: str | None = None, speed: float | None = None, pitch_cents: int = 0, **kwargs):
         for p in (KOKORO_MODEL, KOKORO_VOICES):
             if not p.exists():
                 raise FileNotFoundError(f"Kokoro file missing: {p}. Run setup.sh.")
         self.voice = voice or os.environ.get("CSVIDEO_KOKORO_VOICE", "af_heart")
         self.speed = float(speed or os.environ.get("CSVIDEO_SPEED", 1.0))
+        self.pitch_cents = pitch_cents
         initialize_speech_service(self, kwargs)
 
     @classmethod
@@ -60,13 +70,20 @@ class KokoroService(SpeechService):
         cache_dir = cache_dir or self.cache_dir
         input_data = {"input_text": text, "service": "kokoro",
                       "voice": self.voice, "speed": self.speed}
+        if self.pitch_cents:
+            input_data["pitch"] = self.pitch_cents
         cached = self.get_cached_result(input_data, cache_dir)
         if cached is not None:
             return cached
         audio, sr = self._get_engine().create(text, voice=self.voice, speed=self.speed,
                                               lang="en-us")
         audio_path = path or (self.get_audio_basename(input_data) + ".wav")
-        sf.write(str(Path(cache_dir) / audio_path), audio, sr)
+        out = Path(cache_dir) / audio_path
+        sf.write(str(out), audio, sr)
+        if self.pitch_cents:  # pitch up without changing tempo (sox), plus a little brightness
+            tmp = out.with_suffix(".tmp.wav")
+            subprocess.run(["sox", str(out), str(tmp), "pitch", str(self.pitch_cents), "treble", "3"], check=True)
+            tmp.replace(out)
         return {"input_text": text, "input_data": input_data,
                 "original_audio": str(audio_path)}
 

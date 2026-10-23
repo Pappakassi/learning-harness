@@ -47,6 +47,13 @@ def stitch(parts: list[Path], out: Path):
     lst.unlink()
 
 
+def _shift(ts: str, off: float) -> str:
+    h, m, rest = ts.split(":")
+    sec, ms = rest.split(",")
+    t = int(h) * 3600 + int(m) * 60 + int(sec) + int(ms) / 1000 + off
+    return f"{int(t // 3600):02d}:{int(t % 3600 // 60):02d}:{int(t % 60):02d},{int(round((t % 1) * 1000)) % 1000:03d}"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("video", type=Path)
@@ -91,6 +98,22 @@ def main():
         out = build / f"{name}_{suffix}.mp4"
         stitch(parts, out)
         out_files = [out]
+        # subtitles: manim-voiceover writes one .srt per scene; join them with time offsets
+        srt_lines, offset, idx = [], 0.0, 1
+        for part in parts:
+            srt = part.with_suffix(".srt")
+            d = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                                      "-of", "csv=p=0", str(part)], capture_output=True, text=True).stdout or 0)
+            if srt.exists():
+                for block in srt.read_text().strip().split("\n\n"):
+                    rows = block.strip().splitlines()
+                    if len(rows) >= 3 and "-->" in rows[1]:
+                        a, b = [x.strip() for x in rows[1].split("-->")]
+                        srt_lines.append(f"{idx}\n{_shift(a, offset)} --> {_shift(b, offset)}\n" + "\n".join(rows[2:]) + "\n")
+                        idx += 1
+            offset += d
+        if srt_lines:
+            out.with_suffix(".srt").write_text("\n".join(srt_lines))
 
     for f in out_files:
         dur = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
