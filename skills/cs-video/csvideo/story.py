@@ -25,7 +25,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
-from manim import (BLACK, DOWN, LEFT, ORIGIN, RIGHT, UL, UP, Create, FadeIn, FadeOut, Line,
+from manim import (RoundedRectangle, BLACK, DOWN, LEFT, ORIGIN, RIGHT, UL, UP, Create, FadeIn, FadeOut, Line,
                    MovingCameraScene, ReplacementTransform, ScreenRectangle, Text, VGroup, Write, config)
 
 from . import theme as T
@@ -180,6 +180,8 @@ class StoryScene(CSScene, MovingCameraScene):
         label.move_to(frame.get_center() + LEFT * 0.9 * k + DOWN * (frame.height / 2 - 0.25 * k - label.height / 2))
         cap = VGroup(label)
         cap.skip_layout_check = True
+        off = label.get_center() - frame.get_center()
+        cap.add_updater(lambda m: m.move_to(frame.get_center() + off))   # follow camera pans
         return cap
 
     @contextmanager
@@ -257,9 +259,12 @@ def theme_intro(scene: StoryScene, title: str, subtitle: str = ""):
         scene.wait(0.1)
         lyric = new
     g.stop_talking()                                          # ~12.0
-    big = txt(title, size=60, weight="BOLD").move_to(UP * 2.5)
-    sub = txt(subtitle, size=28, color=P.MUTED).next_to(big, DOWN, buff=0.25) if subtitle else VGroup()
-    scene.play(FadeOut(lyric, run_time=0.3), Write(big, run_time=1.0), FadeIn(sub, run_time=1.0), run_time=1.0)
+    big = txt(title, size=60, weight="BOLD").move_to(UP * 3.05)
+    if big.width > config.frame_width - 1.0:
+        big.scale_to_fit_width(config.frame_width - 1.0)
+    sub = txt(subtitle, size=28, color=P.MUTED).next_to(big, DOWN, buff=0.2) if subtitle else VGroup()
+    scene.play(FadeOut(lyric, run_time=0.3), Write(big, run_time=1.0), FadeIn(sub, run_time=1.0),
+               g.animate.shift(DOWN * 0.45), run_time=1.0)
     scene.play(g.change("surprised"), run_time=0.5)          # ~13.5
     sparks = VGroup(*[Dot(radius=0.05, color=c) for c in (P.YELLOW, P.BLUE, P.PINK, P.GREEN, P.GOLD, P.RED) * 3])
     scene.play(LaggedStart(*[Flash(g.hat_tip.get_top() + RIGHT * 0.0, color=c, line_length=0.4, num_lines=12)
@@ -293,3 +298,13 @@ def theme_outro(scene: StoryScene, line: str = "Tschüss!"):
     scene.play(g.hop(), run_time=0.5)
     scene.play(Flash(g.anchor() + UP * 2.2, color=P.YELLOW, line_length=0.5, num_lines=14), run_time=0.8)
     scene.wait(2.4)
+
+
+def halo(mob, color=P.YELLOW, layers: int = 5, spread: float = 0.35, opacity: float = 0.07):
+    """Soft rounded-rectangle glow that hugs `mob` (use instead of effects.glow for wide shapes)."""
+    g = VGroup(*[RoundedRectangle(corner_radius=0.25 + spread * (i + 1) / layers, width=mob.width + 2 * spread * (i + 1) / layers,
+                                  height=mob.height + 2 * spread * (i + 1) / layers, stroke_width=0,
+                                  fill_color=color, fill_opacity=opacity).move_to(mob) for i in range(layers)])
+    g.skip_layout_check = True
+    g.set_z_index(-1)
+    return g

@@ -315,4 +315,12 @@ class Smtp(StoryScene):
 - Render with `-q f` (1080p30). Layout checks are skipped while the camera is zoomed; check those frames by eye.
 - Style rules: one idea per screen; morph and move things instead of fading screens of text; let the gnome react
   once or twice per chapter (short lines, a joke or a warning), never to repeat the narration.
+- `halo(mob, color)` (from csvideo.story) is the glow for wide shapes; `effects.glow` draws circles and suits round things only.
+- Captions follow camera pans automatically. When following a moving object, animate the camera together with it
+  (`frame.animate.move_to(...)` inside the same `play`) rather than with an updater on the frame.
+
+## Shell safety
+
+Never build an `rm` path from a variable that might be empty: write `rm -rf "${DIR:?}"/*` (the `:?` aborts when DIR is
+unset or empty), and keep `cd dir && ...` chains so a failed `cd` stops the command.
 
