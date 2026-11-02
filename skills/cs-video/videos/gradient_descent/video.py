@@ -40,8 +40,9 @@ PATH = descent()
 
 
 # ---------------- reusable pictures ----------------
-def data_plot(center, w0=0.0, b0=0.0, size=1.0):
-    """km-vs-fare plot with the two rides and a model line driven by trackers w, b."""
+def data_plot(center, w0=0.0, b0=0.0, size=1.0, wb=None):
+    """km-vs-fare plot with the two rides and a model line driven by trackers w, b
+    (or by wb(), a function returning (w, b), when given)."""
     ax = Axes(x_range=[0, 3, 1], y_range=[0, 7, 1], x_length=4.6 * size, y_length=3.9 * size,
               axis_config={"stroke_color": P.MUTED, "include_tip": False, "font_size": 22},
               x_axis_config={"numbers_to_include": [1, 2]}, y_axis_config={"numbers_to_include": [1, 3, 5]})
@@ -50,7 +51,8 @@ def data_plot(center, w0=0.0, b0=0.0, size=1.0):
     yl = txt("fare (1000 kr)", size=20, color=P.MUTED).next_to(ax.y_axis.get_end(), UP, buff=0.12)
     dots = VGroup(*[Dot(ax.c2p(x, y), radius=0.09, color=P.GOLD).set_z_index(5) for x, y in RIDES])
     w, b = ValueTracker(w0), ValueTracker(b0)
-    line = always_redraw(lambda: Line(ax.c2p(0, b.get_value()), ax.c2p(3, w.get_value() * 3 + b.get_value()),
+    cur = wb or (lambda: (w.get_value(), b.get_value()))
+    line = always_redraw(lambda: Line(ax.c2p(0, cur()[1]), ax.c2p(3, cur()[0] * 3 + cur()[1]),
                                       color=P.BLUE, stroke_width=5))
     return SimpleGroup(ax=ax, labels=VGroup(xl, yl), dots=dots, line=line, w=w, b=b)
 
@@ -98,8 +100,8 @@ class Hook(StoryScene):
         with self.say("A taxi app in Akureyri wants to guess fares. It has seen exactly two rides."):
             self.play(Create(d.ax), FadeIn(d.labels), run_time=1.2)
             self.play(LaggedStart(*[FadeIn(p, scale=2) for p in d.dots], lag_ratio=0.4))
-        tags = VGroup(txt("1 km: 3000 kr", size=22, color=P.GOLD).next_to(d.dots[0], LEFT, buff=0.15),
-                      txt("2 km: 5000 kr", size=22, color=P.GOLD).next_to(d.dots[1], LEFT, buff=0.15))
+        tags = VGroup(txt("1 km: 3000 kr", size=22, color=P.GOLD).next_to(d.dots[0], RIGHT, buff=0.15),
+                      txt("2 km: 5000 kr", size=22, color=P.GOLD).next_to(d.dots[1], RIGHT, buff=0.15))
         with self.say("One kilometre cost three thousand krónur. Two kilometres cost five thousand."):
             self.play(FadeIn(tags, shift=LEFT * 0.1))
         rule = M(r"\text{fare}", r"=", r"w", r"\cdot \text{km}", r"+", r"b", size=1.15).move_to([3.2, 1.7, 0])
@@ -146,7 +148,7 @@ class Loss(StoryScene):
         with self.say("That number is called the loss. Big loss, bad model. Zero loss, perfect model."):
             self.play(FadeIn(name, shift=UP * 0.1), FadeIn(halo(sq[8], P.RED)))
         gen = M(r"L(", r"w", r",", r"b", r")", r"=", r"(w\cdot 1 + b - 3)^2", r"+", r"(w\cdot 2 + b - 5)^2",
-                size=0.85).move_to([2.6, -0.6, 0])
+                size=0.75).move_to([3.1, -0.6, 0])
         gen[1].set_color(P.PINK)
         gen[3].set_color(P.TEAL)
         with self.say("With the knobs as letters, the loss is a function of two variables: L of w and b."):
@@ -241,7 +243,7 @@ class Downhill(StoryScene):
             self.play(Write(bnew), run_time=1.2)
         new = Dot(mp.ax.c2p(1.3, 0.8), radius=0.1, color=P.PINK).set_z_index(6)
         trail = Line(o, new.get_center(), color=P.PINK, stroke_width=3)
-        lnew = M(r"L:\; 34 \;\to\; 3.37", size=0.95, color=P.GREEN).move_to([-3.0, 2.4, 0])
+        lnew = M(r"L:\; 34 \;\to\; 3.37", size=0.95, color=P.GREEN).next_to(bnew, DOWN, buff=0.35).align_to(bnew, LEFT)
         with self.say("One step, and the loss drops from thirty-four to about three point four. Ten times better."):
             self.play(FadeOut(up_arrow), FadeOut(upl), FadeOut(dn_arrow), FadeOut(dnl), run_time=0.4)
             self.play(Create(trail), here.animate.move_to(new), run_time=1.0)
@@ -253,9 +255,6 @@ class Repeat(StoryScene):
     def construct(self):
         self.chapter("4. Repeat, repeat, repeat", label="4  Training")
         g = self.add_gnome("fierce", animate=False)
-        d = data_plot([-3.5, 0.35, 0], size=0.85)
-        mp = loss_map([2.6, 0.2, 0], length=3.9)
-        mp.rings.set_stroke(opacity=0.5)
         k = ValueTracker(0)
 
         def pos():
@@ -264,8 +263,9 @@ class Repeat(StoryScene):
             a = t - i
             return PATH[i] * (1 - a) + PATH[i + 1] * a
 
-        d.w.add_updater(lambda m: m.set_value(pos()[0]))
-        d.b.add_updater(lambda m: m.set_value(pos()[1]))
+        d = data_plot([-3.5, 0.35, 0], size=0.85, wb=pos)
+        mp = loss_map([2.6, 0.2, 0], length=3.9)
+        mp.rings.set_stroke(opacity=0.5)
         dot = always_redraw(lambda: Dot(mp.ax.c2p(*pos()), radius=0.1, color=P.PINK).set_z_index(6))
         trail = always_redraw(lambda: VMobject(stroke_color=P.PINK, stroke_width=3).set_points_as_corners(
             [mp.ax.c2p(*p) for p in PATH[:int(k.get_value()) + 1]] + [mp.ax.c2p(*pos())]))
@@ -289,8 +289,6 @@ class Repeat(StoryScene):
         res = M(r"w = 2,\quad b = 1", size=1.0, color=P.GREEN).move_to([-3.5, -2.35, 0])
         with self.say("w is two, b is one. Two thousand per kilometre, plus a thousand to start. Nobody told it that."):
             self.play(Write(res), run_time=1.2)
-        d.w.clear_updaters()
-        d.b.clear_updaters()
         self.play(*[FadeOut(m) for m in (trail, dot, step_lbl, loss_lbl, d.all(), mp.ax, mp.rings, mp.labels, mp.star)],
                   res.animate.move_to(UP * 1.9).scale(1.2), run_time=1.0)
         flat = M(r"\frac{\partial L}{\partial w} = 0", r",\qquad", r"\frac{\partial L}{\partial b} = 0", size=1.0).move_to(UP * 0.4)
